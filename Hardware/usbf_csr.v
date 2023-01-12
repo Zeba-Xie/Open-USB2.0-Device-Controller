@@ -15,16 +15,16 @@
 `include "usbf_cfg_defs.v"
 
 module usbf_csr(
-     input                                          phy_clk_i
+     input                                          hclk_i
     ,input                                          rstn_i
 
     ////// BIU interface
-    ,input                                          sh2pt_wt_en_i
-    ,input                                          sh2pt_rd_en_i
-    ,input                                          sh2pd_enable_i
-    ,input [31:0]                                   sh2pd_addr_i
-    ,input [31:0]                                   sh2pd_wdata_i
-    ,output[31:0]                                   sp2hd_rdata_o
+    ,input                                          wt_en_i
+    ,input                                          rd_en_i
+    ,input                                          enable_i
+    ,input [31:0]                                   addr_i
+    ,input [31:0]                                   wdata_i
+    ,output[31:0]                                   rdata_o
 
     ////// Device core interface
     ,output                                         func_ctrl_hs_chirp_en_o
@@ -77,104 +77,104 @@ module usbf_csr(
 // Register usb_func_ctrl
 //-----------------------------------------------------------------
 
-wire sel_func_ctrl = sh2pd_enable_i & (sh2pd_addr_i[7:0] == `USB_FUNC_CTRL);
-wire func_ctrl_wt_en = sh2pt_wt_en_i & sel_func_ctrl;
-wire func_ctrl_rd_en = sh2pt_rd_en_i & sel_func_ctrl;
+wire sel_func_ctrl = enable_i & (addr_i[7:0] == `USB_FUNC_CTRL);
+wire func_ctrl_wt_en = wt_en_i & sel_func_ctrl;
+wire func_ctrl_rd_en = rd_en_i & sel_func_ctrl;
 
 
 // func_ctrl_hs_chirp_en [internal]
 wire func_ctrl_hs_chirp_en_r;
 wire func_ctrl_hs_chirp_en_ena = func_ctrl_wt_en;
-wire func_ctrl_hs_chirp_en_next = sh2pd_wdata_i[`USB_FUNC_CTRL_HS_CHIRP_EN_R];
+wire func_ctrl_hs_chirp_en_next = wdata_i[`USB_FUNC_CTRL_HS_CHIRP_EN_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_HS_CHIRP_EN_W, `USB_FUNC_CTRL_HS_CHIRP_EN_DEFAULT) 
                 func_ctrl_hs_chirp_en_difflrd(
                     func_ctrl_hs_chirp_en_ena,func_ctrl_hs_chirp_en_next,
                     func_ctrl_hs_chirp_en_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_ctrl_hs_chirp_en_o = func_ctrl_hs_chirp_en_r;
 
 // usb_func_ctrl_phy_dmpulldown [internal]
 wire func_ctrl_phy_dmpulldown_r;
 wire func_ctrl_phy_dmpulldown_ena = func_ctrl_wt_en;
-wire func_ctrl_phy_dmpulldown_next = sh2pd_wdata_i[`USB_FUNC_CTRL_PHY_DMPULLDOWN_R];
+wire func_ctrl_phy_dmpulldown_next = wdata_i[`USB_FUNC_CTRL_PHY_DMPULLDOWN_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_PHY_DMPULLDOWN_W, `USB_FUNC_CTRL_PHY_DMPULLDOWN_DEFAULT) 
                 func_ctrl_phy_dmpulldown_difflrd(
                     func_ctrl_phy_dmpulldown_ena,func_ctrl_phy_dmpulldown_next,
                     func_ctrl_phy_dmpulldown_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_ctrl_phy_dmpulldown_o = func_ctrl_phy_dmpulldown_r;
 
 // usb_func_ctrl_phy_dppulldown [internal]
 wire func_ctrl_phy_dppulldown_r;
 wire func_ctrl_phy_dppulldown_ena = func_ctrl_wt_en;
-wire func_ctrl_phy_dppulldown_next = sh2pd_wdata_i[`USB_FUNC_CTRL_PHY_DPPULLDOWN_R];
+wire func_ctrl_phy_dppulldown_next = wdata_i[`USB_FUNC_CTRL_PHY_DPPULLDOWN_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_PHY_DPPULLDOWN_W, `USB_FUNC_CTRL_PHY_DPPULLDOWN_DEFAULT) 
                 func_ctrl_phy_dppulldown_difflrd(
                     func_ctrl_phy_dppulldown_ena,func_ctrl_phy_dppulldown_next,
                     func_ctrl_phy_dppulldown_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_ctrl_phy_dppulldown_o = func_ctrl_phy_dppulldown_r;
 
 // usb_func_ctrl_phy_termselect [internal]
 wire func_ctrl_phy_termselect_r;
 wire func_ctrl_phy_termselect_ena = func_ctrl_wt_en;
-wire func_ctrl_phy_termselect_next = sh2pd_wdata_i[`USB_FUNC_CTRL_PHY_TERMSELECT_R];
+wire func_ctrl_phy_termselect_next = wdata_i[`USB_FUNC_CTRL_PHY_TERMSELECT_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_PHY_TERMSELECT_W, `USB_FUNC_CTRL_PHY_TERMSELECT_DEFAULT) 
                 func_ctrl_phy_termselect_difflrd(
                     func_ctrl_phy_termselect_ena,func_ctrl_phy_termselect_next,
                     func_ctrl_phy_termselect_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_ctrl_phy_termselect_o = func_ctrl_phy_termselect_r;
 
 // usb_func_ctrl_phy_xcvrselect [internal]
 wire [`USB_FUNC_CTRL_PHY_XCVRSELECT_W-1:0] func_ctrl_phy_xcvrselect_r;
 wire func_ctrl_phy_xcvrselect_ena = func_ctrl_wt_en;
-wire [`USB_FUNC_CTRL_PHY_XCVRSELECT_W-1:0] func_ctrl_phy_xcvrselect_next = sh2pd_wdata_i[`USB_FUNC_CTRL_PHY_XCVRSELECT_R];
+wire [`USB_FUNC_CTRL_PHY_XCVRSELECT_W-1:0] func_ctrl_phy_xcvrselect_next = wdata_i[`USB_FUNC_CTRL_PHY_XCVRSELECT_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_PHY_XCVRSELECT_W, `USB_FUNC_CTRL_PHY_XCVRSELECT_DEFAULT) 
                 func_ctrl_phy_xcvrselect_difflrd(
                     func_ctrl_phy_xcvrselect_ena,func_ctrl_phy_xcvrselect_next,
                     func_ctrl_phy_xcvrselect_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_ctrl_phy_xcvrselect_o = func_ctrl_phy_xcvrselect_r;
 
 // usb_func_ctrl_phy_opmode [internal]
 wire [`USB_FUNC_CTRL_PHY_OPMODE_W-1:0] func_ctrl_phy_opmode_r;
 wire func_ctrl_phy_opmode_ena = func_ctrl_wt_en;
-wire [`USB_FUNC_CTRL_PHY_OPMODE_W-1:0] func_ctrl_phy_opmode_next = sh2pd_wdata_i[`USB_FUNC_CTRL_PHY_OPMODE_R];
+wire [`USB_FUNC_CTRL_PHY_OPMODE_W-1:0] func_ctrl_phy_opmode_next = wdata_i[`USB_FUNC_CTRL_PHY_OPMODE_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_PHY_OPMODE_W, `USB_FUNC_CTRL_PHY_OPMODE_DEFAULT) 
                 func_ctrl_phy_opmode_difflrd(
                     func_ctrl_phy_opmode_ena,func_ctrl_phy_opmode_next,
                     func_ctrl_phy_opmode_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_ctrl_phy_opmode_o = func_ctrl_phy_opmode_r;
 
 // usb_func_ctrl_int_en_sof [internal]
 wire func_ctrl_int_en_sof_r;
 wire func_ctrl_int_en_sof_ena = func_ctrl_wt_en;
-wire func_ctrl_int_en_sof_next = sh2pd_wdata_i[`USB_FUNC_CTRL_INT_EN_SOF_R];
+wire func_ctrl_int_en_sof_next = wdata_i[`USB_FUNC_CTRL_INT_EN_SOF_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_INT_EN_SOF_W, `USB_FUNC_CTRL_INT_EN_SOF_DEFAULT) 
                 func_ctrl_int_en_sof_difflrd(
                     func_ctrl_int_en_sof_ena,func_ctrl_int_en_sof_next,
                     func_ctrl_int_en_sof_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 // assign func_ctrl_int_en_sof_o = func_ctrl_int_en_sof_r;
 
 // usb_func_ctrl_int_en_rst [internal]
 wire func_ctrl_int_en_rst_r;
 wire func_ctrl_int_en_rst_ena = func_ctrl_wt_en;
-wire func_ctrl_int_en_rst_next = sh2pd_wdata_i[`USB_FUNC_CTRL_INT_EN_RST_R];
+wire func_ctrl_int_en_rst_next = wdata_i[`USB_FUNC_CTRL_INT_EN_RST_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_INT_EN_RST_W, `USB_FUNC_CTRL_INT_EN_RST_DEFAULT) 
                 func_ctrl_int_en_rst_difflrd(
                     func_ctrl_int_en_rst_ena,func_ctrl_int_en_rst_next,
                     func_ctrl_int_en_rst_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 // assign func_ctrl_int_en_rst_o = func_ctrl_int_en_rst_r;
 
@@ -183,19 +183,19 @@ usbf_gnrl_dfflrd #(`USB_FUNC_CTRL_INT_EN_RST_W, `USB_FUNC_CTRL_INT_EN_RST_DEFAUL
 //-----------------------------------------------------------------
 // Register usb_func_stat
 //-----------------------------------------------------------------
-wire sel_func_stat = sh2pd_enable_i & (sh2pd_addr_i[7:0] == `USB_FUNC_STAT);
-wire func_stat_wt_en = sh2pt_wt_en_i & sel_func_stat;
-wire func_stat_rd_en = sh2pt_rd_en_i & sel_func_stat;
+wire sel_func_stat = enable_i & (addr_i[7:0] == `USB_FUNC_STAT);
+wire func_stat_wt_en = wt_en_i & sel_func_stat;
+wire func_stat_rd_en = rd_en_i & sel_func_stat;
 
 
 // usb_func_stat_rst [auto_clr]: clear rst interrupt, and it's a pulse signal
 
 //// without reg, the signal is valid 1 cycle ahead of other singal
-// wire func_stat_rst = func_stat_wt_en & (sh2pd_wdata_i[`USB_FUNC_STAT_RST_R] == `USB_FUNC_STAT_RST_W{1'b1});
+// wire func_stat_rst = func_stat_wt_en & (wdata_i[`USB_FUNC_STAT_RST_R] == `USB_FUNC_STAT_RST_W{1'b1});
 
 //// with reg
 wire func_stat_rst_r;
-wire func_stat_rst_set = func_stat_wt_en & sh2pd_wdata_i[`USB_FUNC_STAT_RST_R];
+wire func_stat_rst_set = func_stat_wt_en & wdata_i[`USB_FUNC_STAT_RST_R];
 wire func_stat_rst_clr = func_stat_rst_r;
 wire func_stat_rst_ena = func_stat_rst_set | func_stat_rst_clr;
 wire func_stat_rst_next = func_stat_rst_set | (~func_stat_rst_clr);
@@ -204,7 +204,7 @@ usbf_gnrl_dfflrd #(`USB_FUNC_STAT_RST_W, `USB_FUNC_STAT_RST_DEFAULT)
                 func_stat_rst_difflrd(
                     func_stat_rst_ena,func_stat_rst_next,
                     func_stat_rst_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
     
 wire stat_rst_clr = func_stat_rst_r;
@@ -212,11 +212,11 @@ wire stat_rst_clr = func_stat_rst_r;
 // usb_func_stat_sof [auto_clr]: clear sof interrupt, and it's a pulse singal
 
 //// without reg, the signal is valid 1 cycle ahead of other singal
-// wire func_stat_sof = func_stat_wt_en & (sh2pd_wdata_i[`USB_FUNC_STAT_SOF_R] == `USB_FUNC_STAT_SOF_W{1'b1});
+// wire func_stat_sof = func_stat_wt_en & (wdata_i[`USB_FUNC_STAT_SOF_R] == `USB_FUNC_STAT_SOF_W{1'b1});
 
 //// with reg
 wire func_stat_sof_r;
-wire func_stat_sof_set = func_stat_wt_en & sh2pd_wdata_i[`USB_FUNC_STAT_SOF_R];
+wire func_stat_sof_set = func_stat_wt_en & wdata_i[`USB_FUNC_STAT_SOF_R];
 wire func_stat_sof_clr = func_stat_sof_r;
 wire func_stat_sof_ena = func_stat_sof_set | func_stat_sof_clr;
 wire func_stat_sof_next = func_stat_sof_set | (~func_stat_sof_clr);
@@ -225,7 +225,7 @@ usbf_gnrl_dfflrd #(`USB_FUNC_STAT_SOF_W, `USB_FUNC_STAT_SOF_DEFAULT)
                 func_stat_sof_difflrd(
                     func_stat_sof_ena,func_stat_sof_next,
                     func_stat_sof_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
     
 wire stat_sof_clr = func_stat_sof_r;
@@ -234,19 +234,19 @@ wire stat_sof_clr = func_stat_sof_r;
 //-----------------------------------------------------------------
 // Register usb_func_addr
 //-----------------------------------------------------------------
-wire sel_func_addr = sh2pd_enable_i & (sh2pd_addr_i[7:0] == `USB_FUNC_ADDR);
-wire func_addr_wt_en = sh2pt_wt_en_i & sel_func_addr;
-wire func_addr_rd_en = sh2pt_rd_en_i & sel_func_addr;
+wire sel_func_addr = enable_i & (addr_i[7:0] == `USB_FUNC_ADDR);
+wire func_addr_wt_en = wt_en_i & sel_func_addr;
+wire func_addr_rd_en = rd_en_i & sel_func_addr;
 
 // usb_func_addr_dev_addr [internal]
 wire [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0] func_addr_dev_addr_r;
 wire func_addr_dev_addr_ena = func_addr_wt_en;
-wire [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0] func_addr_dev_addr_next = sh2pd_wdata_i[`USB_FUNC_ADDR_DEV_ADDR_R];
+wire [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0] func_addr_dev_addr_next = wdata_i[`USB_FUNC_ADDR_DEV_ADDR_R];
 usbf_gnrl_dfflrd #(`USB_FUNC_ADDR_DEV_ADDR_W, `USB_FUNC_ADDR_DEV_ADDR_DEFAULT) 
                 func_addr_dev_addr_difflrd(
                     func_addr_dev_addr_ena,func_addr_dev_addr_next,
                     func_addr_dev_addr_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 assign func_addr_dev_addr_o = func_addr_dev_addr_r;
 
@@ -355,35 +355,35 @@ generate //{
         //-----------------------------------------------------------------
         // Register usb_ep_cfg
         //-----------------------------------------------------------------
-        assign sel_ep_cfg[i] = sh2pd_enable_i & (sh2pd_addr_i[7:0] == USB_EPx_CFG[i]);
-        assign ep_cfg_wt_en[i] = sh2pt_wt_en_i & sel_ep_cfg[i];
-        assign ep_cfg_rd_en[i] = sh2pt_rd_en_i & sel_ep_cfg[i];
+        assign sel_ep_cfg[i] = enable_i & (addr_i[7:0] == USB_EPx_CFG[i]);
+        assign ep_cfg_wt_en[i] = wt_en_i & sel_ep_cfg[i];
+        assign ep_cfg_rd_en[i] = rd_en_i & sel_ep_cfg[i];
 
         // usb_ep_cfg_int_rx [internal]
         assign ep_cfg_int_rx_ena[i] = ep_cfg_wt_en[i];
-        assign ep_cfg_int_rx_next[i] = sh2pd_wdata_i[`USB_EP0_CFG_INT_RX_R];
+        assign ep_cfg_int_rx_next[i] = wdata_i[`USB_EP0_CFG_INT_RX_R];
         usbf_gnrl_dfflrd #(`USB_EP0_CFG_INT_RX_W, `USB_EP0_CFG_INT_RX_DEFAULT) 
                         ep_cfg_int_rx_difflrd(
                             ep_cfg_int_rx_ena[i],ep_cfg_int_rx_next[i],
                             ep_cfg_int_rx_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         // assign ep_cfg_int_rx_o[i] = ep_cfg_int_rx_r[i];
 
         // usb_ep_cfg_int_tx [internal]
         assign ep_cfg_int_tx_ena[i] = ep_cfg_wt_en[i];
-        assign ep_cfg_int_tx_next[i] = sh2pd_wdata_i[`USB_EP0_CFG_INT_TX_R];
+        assign ep_cfg_int_tx_next[i] = wdata_i[`USB_EP0_CFG_INT_TX_R];
         usbf_gnrl_dfflrd #(`USB_EP0_CFG_INT_TX_W, `USB_EP0_CFG_INT_TX_DEFAULT) 
                         ep_cfg_int_tx_difflrd(
                             ep_cfg_int_tx_ena[i],ep_cfg_int_tx_next[i],
                             ep_cfg_int_tx_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         // assign ep_cfg_int_tx_o[i] = ep_cfg_int_tx_r[i];
 
         // usb_ep_cfg_stall_ep [clearable]
         assign ep_cfg_stall_ep_ack[i] = ep_sts_rx_setup_i[i];
-        assign ep_cfg_stall_ep_set[i] = ep_cfg_wt_en[i] & sh2pd_wdata_i[`USB_EP0_CFG_STALL_EP_R];
+        assign ep_cfg_stall_ep_set[i] = ep_cfg_wt_en[i] & wdata_i[`USB_EP0_CFG_STALL_EP_R];
         assign ep_cfg_stall_ep_clr[i] = ep_cfg_stall_ep_ack[i];
         assign ep_cfg_stall_ep_ena[i] = ep_cfg_stall_ep_set[i] | ep_cfg_stall_ep_clr[i];
         assign ep_cfg_stall_ep_next[i] = ep_cfg_stall_ep_set[i] | (~ep_cfg_stall_ep_clr[i]);
@@ -391,30 +391,30 @@ generate //{
                         ep_cfg_stall_ep_difflrd(
                             ep_cfg_stall_ep_ena[i],ep_cfg_stall_ep_next[i],
                             ep_cfg_stall_ep_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_cfg_stall_ep_o[i] = ep_cfg_stall_ep_r[i];
 
         // usb_ep_cfg_iso [internal]
         assign ep_cfg_iso_ena[i] = ep_cfg_wt_en[i];
-        assign ep_cfg_iso_next[i] = sh2pd_wdata_i[`USB_EP0_CFG_ISO_R];
+        assign ep_cfg_iso_next[i] = wdata_i[`USB_EP0_CFG_ISO_R];
         usbf_gnrl_dfflrd #(`USB_EP0_CFG_ISO_W, `USB_EP0_CFG_ISO_DEFAULT) 
                         usb_ep_cfg_iso_difflrd(
                             ep_cfg_iso_ena[i],ep_cfg_iso_next[i],
                             ep_cfg_iso_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_cfg_iso_o[i] = ep_cfg_iso_r[i];
 
         //-----------------------------------------------------------------
         // Register usb_ep_tx_ctrl
         //-----------------------------------------------------------------
-        assign sel_ep_tx_ctrl[i] = sh2pd_enable_i & (sh2pd_addr_i[7:0] == USB_EPx_TX_CTRL[i]);
-        assign ep_tx_ctrl_wt_en[i] = sh2pt_wt_en_i & sel_ep_tx_ctrl[i];
-        assign ep_tx_ctrl_rd_en[i] = sh2pt_rd_en_i & sel_ep_tx_ctrl[i];
+        assign sel_ep_tx_ctrl[i] = enable_i & (addr_i[7:0] == USB_EPx_TX_CTRL[i]);
+        assign ep_tx_ctrl_wt_en[i] = wt_en_i & sel_ep_tx_ctrl[i];
+        assign ep_tx_ctrl_rd_en[i] = rd_en_i & sel_ep_tx_ctrl[i];
 
         // usb_ep_tx_ctrl_tx_flush [auto_clr]
-        assign ep_tx_ctrl_tx_flush_set[i] = ep_tx_ctrl_wt_en[i] & sh2pd_wdata_i[`USB_EP0_TX_CTRL_TX_FLUSH_R];
+        assign ep_tx_ctrl_tx_flush_set[i] = ep_tx_ctrl_wt_en[i] & wdata_i[`USB_EP0_TX_CTRL_TX_FLUSH_R];
         assign ep_tx_ctrl_tx_flush_clr[i] = ep_tx_ctrl_tx_flush_r[i];
         assign ep_tx_ctrl_tx_flush_ena[i] = ep_tx_ctrl_tx_flush_set[i] | ep_tx_ctrl_tx_flush_clr[i];
         assign ep_tx_ctrl_tx_flush_next[i] = ep_tx_ctrl_tx_flush_set[i] | (~ep_tx_ctrl_tx_flush_clr[i]);
@@ -422,12 +422,12 @@ generate //{
                         ep_tx_ctrl_tx_flush_difflrd(
                             ep_tx_ctrl_tx_flush_ena[i],ep_tx_ctrl_tx_flush_next[i],
                             ep_tx_ctrl_tx_flush_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_tx_ctrl_tx_flush_o[i] = ep_tx_ctrl_tx_flush_r[i];
 
         // usb_ep_tx_ctrl_tx_start [auto_clr]
-        assign ep_tx_ctrl_tx_start_set[i] = ep_tx_ctrl_wt_en[i] & sh2pd_wdata_i[`USB_EP0_TX_CTRL_TX_START_R];
+        assign ep_tx_ctrl_tx_start_set[i] = ep_tx_ctrl_wt_en[i] & wdata_i[`USB_EP0_TX_CTRL_TX_START_R];
         assign ep_tx_ctrl_tx_start_clr[i] = ep_tx_ctrl_tx_start_r[i];
         assign ep_tx_ctrl_tx_start_ena[i] = ep_tx_ctrl_tx_start_set[i] | ep_tx_ctrl_tx_start_clr[i];
         assign ep_tx_ctrl_tx_start_next[i] = ep_tx_ctrl_tx_start_set[i] | (~ep_tx_ctrl_tx_start_clr[i]);
@@ -435,30 +435,30 @@ generate //{
                         ep_tx_ctrl_tx_start_difflrd(
                             ep_tx_ctrl_tx_start_ena[i],ep_tx_ctrl_tx_start_next[i],
                             ep_tx_ctrl_tx_start_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_tx_ctrl_tx_start_o[i] = ep_tx_ctrl_tx_start_r[i];
 
         // usb_ep_tx_ctrl_tx_len [internal]
         assign ep_tx_ctrl_tx_len_ena[i] = ep_tx_ctrl_wt_en[i];
-        assign ep_tx_ctrl_tx_len_next[i] = sh2pd_wdata_i[`USB_EP0_TX_CTRL_TX_LEN_R];
+        assign ep_tx_ctrl_tx_len_next[i] = wdata_i[`USB_EP0_TX_CTRL_TX_LEN_R];
         usbf_gnrl_dfflrd #(`USB_EP0_TX_CTRL_TX_LEN_W, `USB_EP0_TX_CTRL_TX_LEN_DEFAULT) 
                         ep_tx_ctrl_tx_len_difflrd(
                             ep_tx_ctrl_tx_len_ena[i],ep_tx_ctrl_tx_len_next[i],
                             ep_tx_ctrl_tx_len_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_tx_ctrl_tx_len_o[i*`USB_EP0_TX_CTRL_TX_LEN_W +: `USB_EP0_TX_CTRL_TX_LEN_W] = ep_tx_ctrl_tx_len_r[i];
 
         //-----------------------------------------------------------------
         // Register usb_ep_rx_ctrl
         //-----------------------------------------------------------------
-        assign sel_ep_rx_ctrl[i] = sh2pd_enable_i & (sh2pd_addr_i[7:0] == USB_EPx_RX_CTRL[i]);
-        assign ep_rx_ctrl_wt_en[i] = sh2pt_wt_en_i & sel_ep_rx_ctrl[i];
-        assign ep_rx_ctrl_rd_en[i] = sh2pt_rd_en_i & sel_ep_rx_ctrl[i];
+        assign sel_ep_rx_ctrl[i] = enable_i & (addr_i[7:0] == USB_EPx_RX_CTRL[i]);
+        assign ep_rx_ctrl_wt_en[i] = wt_en_i & sel_ep_rx_ctrl[i];
+        assign ep_rx_ctrl_rd_en[i] = rd_en_i & sel_ep_rx_ctrl[i];
 
         // usb_ep_rx_ctrl_rx_flush [auto_clr]
-        assign ep_rx_ctrl_rx_flush_set[i] = ep_rx_ctrl_wt_en[i] & sh2pd_wdata_i[`USB_EP0_RX_CTRL_RX_FLUSH_R];
+        assign ep_rx_ctrl_rx_flush_set[i] = ep_rx_ctrl_wt_en[i] & wdata_i[`USB_EP0_RX_CTRL_RX_FLUSH_R];
         assign ep_rx_ctrl_rx_flush_clr[i] = ep_rx_ctrl_rx_flush_r[i];
         assign ep_rx_ctrl_rx_flush_ena[i] = ep_rx_ctrl_rx_flush_set[i] | ep_rx_ctrl_rx_flush_clr[i];
         assign ep_rx_ctrl_rx_flush_next[i] = ep_rx_ctrl_rx_flush_set[i] | (~ep_rx_ctrl_rx_flush_clr[i]);
@@ -466,12 +466,12 @@ generate //{
                         ep_rx_ctrl_rx_flush_difflrd(
                             ep_rx_ctrl_rx_flush_ena[i],ep_rx_ctrl_rx_flush_next[i],
                             ep_rx_ctrl_rx_flush_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_rx_ctrl_rx_flush_o[i] = ep_rx_ctrl_rx_flush_r[i];
 
         // usb_ep_rx_ctrl_rx_accept [auto_clr]
-        assign ep_rx_ctrl_rx_accept_set[i] = ep_rx_ctrl_wt_en[i] & sh2pd_wdata_i[`USB_EP0_RX_CTRL_RX_ACCEPT_R];
+        assign ep_rx_ctrl_rx_accept_set[i] = ep_rx_ctrl_wt_en[i] & wdata_i[`USB_EP0_RX_CTRL_RX_ACCEPT_R];
         assign ep_rx_ctrl_rx_accept_clr[i] = ep_rx_ctrl_rx_accept_r[i];
         assign ep_rx_ctrl_rx_accept_ena[i] = ep_rx_ctrl_rx_accept_set[i] | ep_rx_ctrl_rx_accept_clr[i];
         assign ep_rx_ctrl_rx_accept_next[i] = ep_rx_ctrl_rx_accept_set[i] | (~ep_rx_ctrl_rx_accept_clr[i]);
@@ -479,27 +479,27 @@ generate //{
                         ep_rx_ctrl_rx_accept_difflrd(
                             ep_rx_ctrl_rx_accept_ena[i],ep_rx_ctrl_rx_accept_next[i],
                             ep_rx_ctrl_rx_accept_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );
         assign ep_rx_ctrl_rx_accept_o[i] = ep_rx_ctrl_rx_accept_r[i];
 
         //-----------------------------------------------------------------
         // Register usb_ep_sts
         //-----------------------------------------------------------------
-        assign sel_ep_sts[i] = sh2pd_enable_i & (sh2pd_addr_i[7:0] == USB_EPx_STS[i]);
-        assign ep_sts_wt_en[i] = sh2pt_wt_en_i & sel_ep_sts[i];
-        assign ep_sts_rd_en[i] = sh2pt_rd_en_i & sel_ep_sts[i];
+        assign sel_ep_sts[i] = enable_i & (addr_i[7:0] == USB_EPx_STS[i]);
+        assign ep_sts_wt_en[i] = wt_en_i & sel_ep_sts[i];
+        assign ep_sts_rd_en[i] = rd_en_i & sel_ep_sts[i];
 
         //-----------------------------------------------------------------
         // Register usb_ep_data
         //-----------------------------------------------------------------
-        assign sel_ep_data[i]= sh2pd_enable_i & (sh2pd_addr_i[7:0] == USB_EPx_DATA[i]);
-        assign ep_data_wt_en[i] = sh2pt_wt_en_i & sel_ep_data[i];
-        assign ep_data_rd_en[i] = sh2pt_rd_en_i & sel_ep_data[i];
+        assign sel_ep_data[i]= enable_i & (addr_i[7:0] == USB_EPx_DATA[i]);
+        assign ep_data_wt_en[i] = wt_en_i & sel_ep_data[i];
+        assign ep_data_rd_en[i] = rd_en_i & sel_ep_data[i];
 
         // usb_ep_data_data [external]
         //// out to tx fifo
-        assign ep_tx_data[i] = {`USB_EP0_DATA_DATA_W{ep_data_wt_en[i]}} & sh2pd_wdata_i[`USB_EP0_DATA_DATA_R];
+        assign ep_tx_data[i] = {`USB_EP0_DATA_DATA_W{ep_data_wt_en[i]}} & wdata_i[`USB_EP0_DATA_DATA_R];
         assign ep_tx_data_o[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W] = ep_tx_data[i];
 
 
@@ -510,16 +510,16 @@ endgenerate //}
 //-----------------------------------------------------------------
 // Register USB_EP_INTSTS
 //-----------------------------------------------------------------
-wire sel_ep_intsts = sh2pd_enable_i & (sh2pd_addr_i[7:0] == `USB_EP_INTSTS);
-wire ep_intsts_wt_en = sh2pt_wt_en_i & sel_ep_intsts;
-wire ep_intsts_rd_en = sh2pt_rd_en_i & sel_ep_intsts;
+wire sel_ep_intsts = enable_i & (addr_i[7:0] == `USB_EP_INTSTS);
+wire ep_intsts_wt_en = wt_en_i & sel_ep_intsts;
+wire ep_intsts_rd_en = rd_en_i & sel_ep_intsts;
 
 //-------------------------------------------
 // EP 0
 //-------------------------------------------
 // usb_ep_intsts_ep0_rx_ready [auto_clr]
 wire ep_intsts_ep0_rx_ready_r;
-wire ep_intsts_ep0_rx_ready_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP0_RX_READY_R];
+wire ep_intsts_ep0_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP0_RX_READY_R];
 wire ep_intsts_ep0_rx_ready_clr = ep_intsts_ep0_rx_ready_r;
 wire ep_intsts_ep0_rx_ready_ena = ep_intsts_ep0_rx_ready_set | ep_intsts_ep0_rx_ready_clr;
 wire ep_intsts_ep0_rx_ready_next = ep_intsts_ep0_rx_ready_set | (~ep_intsts_ep0_rx_ready_clr);
@@ -528,12 +528,12 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_RX_READY_W, `USB_EP_INTSTS_EP0_RX_READY_DE
                 ep_intsts_ep0_rx_ready_difflrd(
                     ep_intsts_ep0_rx_ready_ena,ep_intsts_ep0_rx_ready_next,
                     ep_intsts_ep0_rx_ready_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
     
 // usb_ep_intsts_ep0_tx_complete [auto_clr]
 wire ep_intsts_ep0_tx_complete_r;
-wire ep_intsts_ep0_tx_complete_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP0_TX_COMPLETE_R];
+wire ep_intsts_ep0_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP0_TX_COMPLETE_R];
 wire ep_intsts_ep0_tx_complete_clr = ep_intsts_ep0_tx_complete_r;
 wire ep_intsts_ep0_tx_complete_ena = ep_intsts_ep0_tx_complete_set | ep_intsts_ep0_tx_complete_clr;
 wire ep_intsts_ep0_tx_complete_next = ep_intsts_ep0_tx_complete_set | (~ep_intsts_ep0_tx_complete_clr);
@@ -542,7 +542,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_TX_COMPLETE_W, `USB_EP_INTSTS_EP0_TX_COMPL
                 ep_intsts_ep0_tx_complete_difflrd(
                     ep_intsts_ep0_tx_complete_ena,ep_intsts_ep0_tx_complete_next,
                     ep_intsts_ep0_tx_complete_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 
 //-------------------------------------------
@@ -550,7 +550,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_TX_COMPLETE_W, `USB_EP_INTSTS_EP0_TX_COMPL
 //-------------------------------------------
 // usb_ep_intsts_ep1_rx_ready [auto_clr]
 wire ep_intsts_ep1_rx_ready_r;
-wire ep_intsts_ep1_rx_ready_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP1_RX_READY_R];
+wire ep_intsts_ep1_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP1_RX_READY_R];
 wire ep_intsts_ep1_rx_ready_clr = ep_intsts_ep1_rx_ready_r;
 wire ep_intsts_ep1_rx_ready_ena = ep_intsts_ep1_rx_ready_set | ep_intsts_ep1_rx_ready_clr;
 wire ep_intsts_ep1_rx_ready_next = ep_intsts_ep1_rx_ready_set | (~ep_intsts_ep1_rx_ready_clr);
@@ -559,12 +559,12 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP1_RX_READY_W, `USB_EP_INTSTS_EP1_RX_READY_DE
                 ep_intsts_ep1_rx_ready_difflrd(
                     ep_intsts_ep1_rx_ready_ena,ep_intsts_ep1_rx_ready_next,
                     ep_intsts_ep1_rx_ready_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
     
 // usb_ep_intsts_ep1_tx_complete [auto_clr]
 wire ep_intsts_ep1_tx_complete_r;
-wire ep_intsts_ep1_tx_complete_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP1_TX_COMPLETE_R];
+wire ep_intsts_ep1_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP1_TX_COMPLETE_R];
 wire ep_intsts_ep1_tx_complete_clr = ep_intsts_ep1_tx_complete_r;
 wire ep_intsts_ep1_tx_complete_ena = ep_intsts_ep1_tx_complete_set | ep_intsts_ep1_tx_complete_clr;
 wire ep_intsts_ep1_tx_complete_next = ep_intsts_ep1_tx_complete_set | (~ep_intsts_ep1_tx_complete_clr);
@@ -573,7 +573,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP1_TX_COMPLETE_W, `USB_EP_INTSTS_EP1_TX_COMPL
                 ep_intsts_ep1_tx_complete_difflrd(
                     ep_intsts_ep1_tx_complete_ena,ep_intsts_ep1_tx_complete_next,
                     ep_intsts_ep1_tx_complete_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 
 //-------------------------------------------
@@ -581,7 +581,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP1_TX_COMPLETE_W, `USB_EP_INTSTS_EP1_TX_COMPL
 //-------------------------------------------
 // usb_ep_intsts_ep2_rx_ready [auto_clr]
 wire ep_intsts_ep2_rx_ready_r;
-wire ep_intsts_ep2_rx_ready_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP2_RX_READY_R];
+wire ep_intsts_ep2_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP2_RX_READY_R];
 wire ep_intsts_ep2_rx_ready_clr = ep_intsts_ep2_rx_ready_r;
 wire ep_intsts_ep2_rx_ready_ena = ep_intsts_ep2_rx_ready_set | ep_intsts_ep2_rx_ready_clr;
 wire ep_intsts_ep2_rx_ready_next = ep_intsts_ep2_rx_ready_set | (~ep_intsts_ep2_rx_ready_clr);
@@ -590,12 +590,12 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP2_RX_READY_W, `USB_EP_INTSTS_EP2_RX_READY_DE
                 ep_intsts_ep2_rx_ready_difflrd(
                     ep_intsts_ep2_rx_ready_ena,ep_intsts_ep2_rx_ready_next,
                     ep_intsts_ep2_rx_ready_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
     
 // usb_ep_intsts_ep2_tx_complete [auto_clr]
 wire ep_intsts_ep2_tx_complete_r;
-wire ep_intsts_ep2_tx_complete_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP2_TX_COMPLETE_R];
+wire ep_intsts_ep2_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP2_TX_COMPLETE_R];
 wire ep_intsts_ep2_tx_complete_clr = ep_intsts_ep2_tx_complete_r;
 wire ep_intsts_ep2_tx_complete_ena = ep_intsts_ep2_tx_complete_set | ep_intsts_ep2_tx_complete_clr;
 wire ep_intsts_ep2_tx_complete_next = ep_intsts_ep2_tx_complete_set | (~ep_intsts_ep2_tx_complete_clr);
@@ -604,7 +604,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP2_TX_COMPLETE_W, `USB_EP_INTSTS_EP2_TX_COMPL
                 ep_intsts_ep2_tx_complete_difflrd(
                     ep_intsts_ep2_tx_complete_ena,ep_intsts_ep2_tx_complete_next,
                     ep_intsts_ep2_tx_complete_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 
 //-------------------------------------------
@@ -612,7 +612,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP2_TX_COMPLETE_W, `USB_EP_INTSTS_EP2_TX_COMPL
 //-------------------------------------------
 // usb_ep_intsts_ep3_rx_ready [auto_clr]
 wire ep_intsts_ep3_rx_ready_r;
-wire ep_intsts_ep3_rx_ready_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP3_RX_READY_R];
+wire ep_intsts_ep3_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP3_RX_READY_R];
 wire ep_intsts_ep3_rx_ready_clr = ep_intsts_ep3_rx_ready_r;
 wire ep_intsts_ep3_rx_ready_ena = ep_intsts_ep3_rx_ready_set | ep_intsts_ep3_rx_ready_clr;
 wire ep_intsts_ep3_rx_ready_next = ep_intsts_ep3_rx_ready_set | (~ep_intsts_ep3_rx_ready_clr);
@@ -621,12 +621,12 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP3_RX_READY_W, `USB_EP_INTSTS_EP3_RX_READY_DE
                 ep_intsts_ep3_rx_ready_difflrd(
                     ep_intsts_ep3_rx_ready_ena,ep_intsts_ep3_rx_ready_next,
                     ep_intsts_ep3_rx_ready_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
     
 // usb_ep_intsts_ep3_tx_complete [auto_clr]
 wire ep_intsts_ep3_tx_complete_r;
-wire ep_intsts_ep3_tx_complete_set = ep_intsts_wt_en & sh2pd_wdata_i[`USB_EP_INTSTS_EP3_TX_COMPLETE_R];
+wire ep_intsts_ep3_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP3_TX_COMPLETE_R];
 wire ep_intsts_ep3_tx_complete_clr = ep_intsts_ep3_tx_complete_r;
 wire ep_intsts_ep3_tx_complete_ena = ep_intsts_ep3_tx_complete_set | ep_intsts_ep3_tx_complete_clr;
 wire ep_intsts_ep3_tx_complete_next = ep_intsts_ep3_tx_complete_set | (~ep_intsts_ep3_tx_complete_clr);
@@ -635,7 +635,7 @@ usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP3_TX_COMPLETE_W, `USB_EP_INTSTS_EP3_TX_COMPL
                 ep_intsts_ep3_tx_complete_difflrd(
                     ep_intsts_ep3_tx_complete_ena,ep_intsts_ep3_tx_complete_next,
                     ep_intsts_ep3_tx_complete_r,
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 
 //// 
@@ -776,7 +776,7 @@ generate //{
                         ep_data_difflrd(
                             ep_data_ena[i],ep_data_next[i],
                             ep_data_r[i],
-                            phy_clk_i,rstn_i
+                            hclk_i,rstn_i
                         );        
     end //}
 
@@ -807,7 +807,7 @@ generate //{
                     ({32{sel_ep_intsts}} & ep_intsts_r) |
                     ep_rdata_r;
 
-    assign sp2hd_rdata_o = sh2pd_enable_i ? rdata : 32'b0;
+    assign rdata_o = enable_i ? rdata : 32'b0;
 endgenerate //}
 //==========================================================================================
 // Register Read }
@@ -851,7 +851,7 @@ generate //{
                 intr_ep_rx_ready_difflrd(
                     intr_ep_rx_ready_ena[i],intr_ep_rx_ready_next[i],
                     intr_ep_rx_ready_r[i],
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 
         assign intr_ep_tx_complete_set[i] = (~intr_ep_tx_complete_r[i]) & ep_tx_complete_intr_set_i[i];
@@ -862,7 +862,7 @@ generate //{
                 intr_ep_tx_complete_difflrd(
                     intr_ep_tx_complete_ena[i],intr_ep_tx_complete_next[i],
                     intr_ep_tx_complete_r[i],
-                    phy_clk_i,rstn_i
+                    hclk_i,rstn_i
                 );
 
     end //}
@@ -880,7 +880,7 @@ usbf_gnrl_dfflrd #(1, 1'b0)
         intr_sof_difflrd(
             intr_sof_ena,intr_sof_next,
             intr_sof_r,
-            phy_clk_i,rstn_i
+            hclk_i,rstn_i
         );
 
 //-----------------------------------------------------------------
@@ -895,7 +895,7 @@ usbf_gnrl_dfflrd #(1, 1'b0)
         intr_reset_difflrd(
             intr_reset_ena,intr_reset_next,
             intr_reset_r,
-            phy_clk_i,rstn_i
+            hclk_i,rstn_i
         );
 
 //-----------------------------------------------------------------

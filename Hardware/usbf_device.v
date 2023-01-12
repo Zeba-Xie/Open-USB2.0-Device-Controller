@@ -14,6 +14,7 @@
 // |------|           |-----|       |-----------|
 //    ^                  ^                ^
 //    |------------------|----------------|
+//                    |SYNC |
 //                       v
 //                    | CSR |
 //                    |-----|
@@ -68,13 +69,23 @@ module usbf_device(
 // Wire
 //-----------------------------------------------------------------
 ////// CSR<-->BIU 
-wire                                            sh2pt_wt_en;
-wire                                            sh2pt_rd_en;
-wire                                            sh2pd_enable;
-wire    [31:0]                                  sh2pd_addr ;
-wire    [31:0]                                  sh2pd_wdata;
-wire    [31:0]                                  sp2hd_rdata;
+wire                                            wt_en;
+wire                                            rd_en;
+wire                                            enable;
+wire    [31:0]                                  addr ;
+wire    [31:0]                                  wdata;
+wire    [31:0]                                  rdata;
 ////// CSR<-->CORE
+wire                                            csr_func_ctrl_hs_chirp_en;
+wire    [`USB_FUNC_ADDR_DEV_ADDR_W-1:0]         csr_func_addr_dev_addr;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_cfg_stall_ep;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_cfg_iso;
+wire    [`USB_FUNC_STAT_FRAME_W-1:0]            csr_func_stat_frame;
+wire                                            csr_rst_intr_set;
+wire                                            csr_sof_intr_set;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_rx_ready_intr_set;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_tx_complete_intr_set;
+
 wire                                            func_ctrl_hs_chirp_en;
 wire    [`USB_FUNC_ADDR_DEV_ADDR_W-1:0]         func_addr_dev_addr;
 wire    [`USB_EP_NUM-1:0]                       ep_cfg_stall_ep;
@@ -86,6 +97,16 @@ wire    [`USB_EP_NUM-1:0]                       ep_rx_ready_intr_set;
 wire    [`USB_EP_NUM-1:0]                       ep_tx_complete_intr_set;
 
 ////// CSR<-->EPU
+wire    [`USB_EP_NUM-1:0]                       csr_ep_tx_ctrl_tx_start;
+wire    [`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM-1:0]   csr_ep_tx_ctrl_tx_len;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_rx_ctrl_rx_accept;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_sts_tx_err;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_sts_tx_busy;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_sts_rx_err;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_sts_rx_setup;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_sts_rx_ready;
+wire    [`USB_EP0_STS_RX_COUNT_W*`USB_EP_NUM-1:0] csr_ep_sts_rx_count;
+
 wire    [`USB_EP_NUM-1:0]                       ep_tx_ctrl_tx_start;
 wire    [`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM-1:0]   ep_tx_ctrl_tx_len;
 wire    [`USB_EP_NUM-1:0]                       ep_rx_ctrl_rx_accept;
@@ -96,12 +117,27 @@ wire    [`USB_EP_NUM-1:0]                       ep_sts_rx_setup;
 wire    [`USB_EP_NUM-1:0]                       ep_sts_rx_ready;
 wire    [`USB_EP0_STS_RX_COUNT_W*`USB_EP_NUM-1:0] ep_sts_rx_count;
 ////// CSR<-->MEM
+wire    [`USB_EP_NUM-1:0]                       csr_ep_rx_ctrl_rx_flush;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_data_wt_req;
+wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  csr_ep_rx_data;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_tx_ctrl_tx_flush;
+wire    [`USB_EP_NUM-1:0]                       csr_ep_data_rd_req;
+wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  csr_ep_tx_data;
+
 wire    [`USB_EP_NUM-1:0]                       ep_rx_ctrl_rx_flush;
 wire    [`USB_EP_NUM-1:0]                       ep_data_wt_req;
 wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  ep_rx_data;
 wire    [`USB_EP_NUM-1:0]                       ep_tx_ctrl_tx_flush;
 wire    [`USB_EP_NUM-1:0]                       ep_data_rd_req;
 wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  ep_tx_data;
+
+////// CSR<-->SYNC
+wire                                        	csr_func_ctrl_phy_dmpulldown;
+wire                                        	csr_func_ctrl_phy_dppulldown;
+wire                                        	csr_func_ctrl_phy_termselect;
+wire    [1:0]                                   csr_func_ctrl_phy_xcvrselect;
+wire    [1:0]                                   csr_func_ctrl_phy_opmode;
+wire    [1:0]                                   csr_func_stat_linestate;
 
 ////// EPU<-->CORE
 wire    [`USB_EP_NUM-1:0]                       core_sie_rx_space;
@@ -129,8 +165,6 @@ wire    [`USB_EP_NUM-1:0]                       mem_ep_tx_empty;
 // BIU
 //-----------------------------------------------------------------
 usbf_biu u_usbf_biu(
-    .phy_clk_i              (phy_clk_i),
-
     ////// AHB slave interface
     .hclk_i                 (hclk_i),
     .hrstn_i                (hrstn_i),
@@ -147,74 +181,150 @@ usbf_biu u_usbf_biu(
     .hrdata_o               (hrdata_o),
 
     ////// CSR interface
-    .sh2pt_wt_en_o           (sh2pt_wt_en),      
-    .sh2pt_rd_en_o           (sh2pt_rd_en),
-    .sh2pd_enable_o          (sh2pd_enable),
-    .sh2pd_addr_o            (sh2pd_addr ),
-    .sh2pd_wdata_o           (sh2pd_wdata),
-    .sp2hd_rdata_i           (sp2hd_rdata)
+    .wt_en_o           (wt_en),      
+    .rd_en_o           (rd_en),
+    .enable_o          (enable),
+    .addr_o            (addr ),
+    .wdata_o           (wdata),
+    .rdata_i           (rdata)
 );
 
 //-----------------------------------------------------------------
 // CSR
 //-----------------------------------------------------------------
 usbf_csr u_usbf_csr(
-    .phy_clk_i                         (phy_clk_i),                                         
+    .hclk_i                            (hclk_i),                                         
     .rstn_i                            (hrstn_i),                                     
  
     ////// BIU interface 
-    .sh2pt_wt_en_i                     (sh2pt_wt_en),                                 
-    .sh2pt_rd_en_i                     (sh2pt_rd_en),     
-    .sh2pd_enable_i                    (sh2pd_enable),                            
-    .sh2pd_addr_i                      (sh2pd_addr ),                                 
-    .sh2pd_wdata_i                     (sh2pd_wdata),                                 
-    .sp2hd_rdata_o                     (sp2hd_rdata),                                 
+    .wt_en_i                           (wt_en),                                 
+    .rd_en_i                           (rd_en),     
+    .enable_i                          (enable),                            
+    .addr_i                            (addr ),                                 
+    .wdata_i                           (wdata),                                 
+    .rdata_o                           (rdata),                                 
  
     ////// Device core interface                                                             
-    .func_ctrl_hs_chirp_en_o           (func_ctrl_hs_chirp_en ),                                                                          
-    .func_addr_dev_addr_o              (func_addr_dev_addr),                                                                            
-    .ep_cfg_stall_ep_o                 (ep_cfg_stall_ep),
-    .ep_cfg_iso_o                      (ep_cfg_iso),                                                                             
-    .func_stat_frame_i                 (func_stat_frame),  
-    .rst_intr_set_i                    (rst_intr_set),
-    .sof_intr_set_i                    (sof_intr_set), 
-    .ep_rx_ready_intr_set_i            (ep_rx_ready_intr_set),     
-    .ep_tx_complete_intr_set_i         (ep_tx_complete_intr_set),                                                    
+    .func_ctrl_hs_chirp_en_o           (csr_func_ctrl_hs_chirp_en ),                                                                          
+    .func_addr_dev_addr_o              (csr_func_addr_dev_addr),                                                                            
+    .ep_cfg_stall_ep_o                 (csr_ep_cfg_stall_ep),
+    .ep_cfg_iso_o                      (csr_ep_cfg_iso),                                                                             
+    .func_stat_frame_i                 (csr_func_stat_frame),  
+    .rst_intr_set_i                    (csr_rst_intr_set),
+    .sof_intr_set_i                    (csr_sof_intr_set), 
+    .ep_rx_ready_intr_set_i            (csr_ep_rx_ready_intr_set),     
+    .ep_tx_complete_intr_set_i         (csr_ep_tx_complete_intr_set),                                                    
  
     ////// EPU(endpoint) interface                                                       
-    .ep_tx_ctrl_tx_start_o             (ep_tx_ctrl_tx_start),                                             
-    .ep_tx_ctrl_tx_len_o               (ep_tx_ctrl_tx_len),                                                
-       
-    .ep_rx_ctrl_rx_accept_o            (ep_rx_ctrl_rx_accept),                                                                 
- 
-    .ep_sts_tx_err_i                   (ep_sts_tx_err),                                             
-    .ep_sts_tx_busy_i                  (ep_sts_tx_busy),                                         
-    .ep_sts_rx_err_i                   (ep_sts_rx_err),                                              
-    .ep_sts_rx_setup_i                 (ep_sts_rx_setup),                                                         
-    .ep_sts_rx_ready_i                 (ep_sts_rx_ready),                                                          
-    .ep_sts_rx_count_i                 (ep_sts_rx_count),                                                         
+    .ep_tx_ctrl_tx_start_o             (csr_ep_tx_ctrl_tx_start),                                             
+    .ep_tx_ctrl_tx_len_o               (csr_ep_tx_ctrl_tx_len),                                                
+    .ep_rx_ctrl_rx_accept_o            (csr_ep_rx_ctrl_rx_accept),          
+    .ep_sts_tx_err_i                   (csr_ep_sts_tx_err),                                             
+    .ep_sts_tx_busy_i                  (csr_ep_sts_tx_busy),                                         
+    .ep_sts_rx_err_i                   (csr_ep_sts_rx_err),                                              
+    .ep_sts_rx_setup_i                 (csr_ep_sts_rx_setup),                                                         
+    .ep_sts_rx_ready_i                 (csr_ep_sts_rx_ready),                                                          
+    .ep_sts_rx_count_i                 (csr_ep_sts_rx_count),                                                         
  
     ////// MEM(memory) interface 
         // RX 
-    .ep_rx_ctrl_rx_flush_o             (ep_rx_ctrl_rx_flush),                                                                            
-    .ep_data_rd_req_o                  (ep_data_rd_req),                                                
-    .ep_rx_data_i                      (ep_rx_data),                                      
+    .ep_rx_ctrl_rx_flush_o             (csr_ep_rx_ctrl_rx_flush),                                                                            
+    .ep_data_rd_req_o                  (csr_ep_data_rd_req),                                                
+    .ep_rx_data_i                      (csr_ep_rx_data),                                      
         // TX 
-    .ep_tx_ctrl_tx_flush_o             (ep_tx_ctrl_tx_flush),   
-    .ep_data_wt_req_o                  (ep_data_wt_req),                                                                                      
-    .ep_tx_data_o                      (ep_tx_data),                                             
+    .ep_tx_ctrl_tx_flush_o             (csr_ep_tx_ctrl_tx_flush),   
+    .ep_data_wt_req_o                  (csr_ep_data_wt_req),                                                                                      
+    .ep_tx_data_o                      (csr_ep_tx_data),                                             
       
     ////// Device interface 
-    .func_ctrl_phy_dmpulldown_o        (utmi_dmpulldown_o),                                                                         
-    .func_ctrl_phy_dppulldown_o        (utmi_dppulldown_o),                                                                         
-    .func_ctrl_phy_termselect_o        (utmi_termselect_o),                                                                         
-    .func_ctrl_phy_xcvrselect_o        (utmi_xcvrselect_o),                                                                         
-    .func_ctrl_phy_opmode_o            (utmi_op_mode_o),                                                                                                                                                        
-    .func_stat_linestate_i             (utmi_linestate_i),  
+    .func_ctrl_phy_dmpulldown_o        (csr_utmi_dmpulldown),                                                                         
+    .func_ctrl_phy_dppulldown_o        (csr_utmi_dppulldown),                                                                         
+    .func_ctrl_phy_termselect_o        (csr_utmi_termselect),                                                                         
+    .func_ctrl_phy_xcvrselect_o        (csr_utmi_xcvrselect),                                                                         
+    .func_ctrl_phy_opmode_o            (csr_utmi_op_mode),                                                                                                                                                        
+    .func_stat_linestate_i             (csr_utmi_linestate),  
 
     // interrupt req
     .intr_o                            (intr_o)                                                                     
 
+);
+//-----------------------------------------------------------------
+// SYNC
+//-----------------------------------------------------------------
+usbf_sync u_usbf_sync(
+    .phy_clk_i                          (phy_clk_i),
+    .hclk_i                             (hclk_i),
+    .rstn_i                             (hrstn_i),
+
+    // connect to CSR
+    .func_ctrl_hs_chirp_en_i            (csr_func_ctrl_hs_chirp_en ), 
+    .func_addr_dev_addr_i               (csr_func_addr_dev_addr),     
+    .ep_cfg_stall_ep_i                  (csr_ep_cfg_stall_ep),
+    .ep_cfg_iso_i                       (csr_ep_cfg_iso),             
+    .func_stat_frame_o                  (csr_func_stat_frame),  
+    .rst_intr_set_o                     (csr_rst_intr_set),
+    .sof_intr_set_o                     (csr_sof_intr_set), 
+    .ep_rx_ready_intr_set_o             (csr_ep_rx_ready_intr_set),   
+    .ep_tx_complete_intr_set_o          (csr_ep_tx_complete_intr_set),
+
+    .ep_tx_ctrl_tx_start_i              (csr_ep_tx_ctrl_tx_start), 
+    .ep_tx_ctrl_tx_len_i                (csr_ep_tx_ctrl_tx_len),   
+    .ep_rx_ctrl_rx_accept_i             (csr_ep_rx_ctrl_rx_accept),
+    .ep_sts_tx_err_o                    (csr_ep_sts_tx_err),       
+    .ep_sts_tx_busy_o                   (csr_ep_sts_tx_busy),      
+    .ep_sts_rx_err_o                    (csr_ep_sts_rx_err),       
+    .ep_sts_rx_setup_o                  (csr_ep_sts_rx_setup),     
+    .ep_sts_rx_ready_o                  (csr_ep_sts_rx_ready),     
+    .ep_sts_rx_count_o                  (csr_ep_sts_rx_count),     
+
+    .ep_rx_ctrl_rx_flush_i              (csr_ep_rx_ctrl_rx_flush),
+    .ep_data_rd_req_i                   (csr_ep_data_rd_req),     
+    .ep_rx_data_o                       (csr_ep_rx_data),         
+    .ep_tx_ctrl_tx_flush_i              (csr_ep_tx_ctrl_tx_flush), 
+    .ep_data_wt_req_i                   (csr_ep_data_wt_req),      
+    .ep_tx_data_i                       (csr_ep_tx_data),          
+
+    .func_ctrl_phy_dmpulldown_i         (csr_utmi_dmpulldown),
+    .func_ctrl_phy_dppulldown_i         (csr_utmi_dppulldown),
+    .func_ctrl_phy_termselect_i         (csr_utmi_termselect),
+    .func_ctrl_phy_xcvrselect_i         (csr_utmi_xcvrselect),
+    .func_ctrl_phy_opmode_i             (csr_utmi_op_mode),   
+    .func_stat_linestate_o              (csr_utmi_linestate), 
+
+    // connect to phy domain modules
+    .sh2pl_func_ctrl_hs_chirp_en_o      (func_ctrl_hs_chirp_en),
+    .sh2pb_func_addr_dev_addr_o         (func_addr_dev_addr),
+    .sh2pl_ep_cfg_stall_ep_o            (ep_cfg_stall_ep),
+    .sh2pl_ep_cfg_iso_o                 (ep_cfg_iso),
+    .p2hb_func_stat_frame_i             (func_stat_frame),
+    .p2ht_rst_intr_set_i                (rst_intr_set),
+    .p2ht_sof_intr_set_i                (sof_intr_set),
+    .p2ht_ep_rx_ready_intr_set_i        (ep_rx_ready_intr_set),
+    .p2ht_ep_tx_complete_intr_set_i     (ep_tx_complete_intr_set),
+    
+    .sh2pt_ep_tx_ctrl_tx_start_o        (ep_tx_ctrl_tx_start),
+    .sh2pb_ep_tx_ctrl_tx_len_o          (ep_tx_ctrl_tx_len),
+    .sh2pt_ep_rx_ctrl_rx_accept_o       (ep_rx_ctrl_rx_accept),
+    .p2hl_ep_sts_tx_err_i               (ep_sts_tx_err),
+    .p2hl_ep_sts_tx_busy_i              (ep_sts_tx_busy),
+    .p2hl_ep_sts_rx_err_i               (ep_sts_rx_err),
+    .p2hl_ep_sts_rx_setup_i             (ep_sts_rx_setup),
+    .p2hl_ep_sts_rx_ready_i             (ep_sts_rx_ready),
+    .p2hb_ep_sts_rx_count_i             (ep_sts_rx_count),
+    
+    .sh2pt_ep_rx_ctrl_rx_flush_o        (ep_rx_ctrl_rx_flush),
+    .sh2pt_ep_data_rd_req_o             (ep_data_rd_req),
+    .p2hb_ep_rx_data_i                  (ep_rx_data),
+    .sh2pt_ep_tx_ctrl_tx_flush_o        (ep_tx_ctrl_tx_flush),
+    .sh2pt_ep_data_wt_req_o             (ep_data_wt_req),
+    .sh2pb_ep_tx_data_o                 (ep_tx_data),
+    
+    .sh2pl_func_ctrl_phy_dmpulldown_o   (utmi_dmpulldown_o),
+    .sh2pl_func_ctrl_phy_dppulldown_o   (utmi_dppulldown_o),
+    .sh2pl_func_ctrl_phy_termselect_o   (utmi_termselect_o),
+    .sh2pb_func_ctrl_phy_xcvrselect_o   (utmi_xcvrselect_o),
+    .sh2pb_func_ctrl_phy_opmode_o       (utmi_op_mode_o),
+    .p2hb_func_stat_linestate_i         (utmi_linestate_i)
 );
 
 //-----------------------------------------------------------------
