@@ -5,21 +5,20 @@
 // Version: V1.0
 // Created by Zeba-Xie @github
 //
-//=================================================================
-
-`include "usbf_cfg_defs.v"
-
 // hclk -> phyclk
-// sh2pt
-// sh2pl
-// sh2pd
-// sh2pb
+// sh2pt : toggle
+// sh2pl : level
+// sh2pd : direct
+// sh2pb : bus
 
 // phyclk -> hclk
 // sp2ht
 // sp2hl
 // sp2hd
 // sp2hb
+//=================================================================
+
+`include "usbf_cfg_defs.v"
 
 module usbf_sync(
 	 input                                          phy_clk_i
@@ -111,12 +110,7 @@ module usbf_sync(
     ,output [1:0]                                   sh2pb_func_ctrl_phy_opmode_o
     ,input  [1:0]                                   p2hb_func_stat_linestate_i
 );
-set_level_sync #(2) _sync(
-	.clk_d(phy_clk_i),
-	.rst_n(rstn_i),
-	.din(),
-	.dout()
-);
+
 //-----------------------------------------------------------------
 // Device core interface
 //-----------------------------------------------------------------

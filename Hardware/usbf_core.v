@@ -12,6 +12,7 @@
 // .Moved intr to CSR 
 // .Simplified interface
 // .Change reset singnal form high active to low active
+// .The number of endpoints can be configured
 //
 //=================================================================
 `include "usbf_cfg_defs.v"
@@ -152,8 +153,7 @@ wire                    frame_valid_w;
 `define USB_DEV_W      7
 wire [`USB_DEV_W-1:0]   token_dev_w;
 
-`define USB_EP_W       4
-wire [`USB_EP_W-1:0]    token_ep_w;
+wire [`USB_EP_NUM-1:0]  token_ep_w;
 
 `define USB_PID_W      8
 wire [`USB_PID_W-1:0]   token_pid_w;
@@ -186,10 +186,7 @@ reg                     ep_iso_r;
 reg                     rx_enable_q;
 reg                     rx_setup_q;
 
-reg                     ep0_data_bit_q;
-reg                     ep1_data_bit_q;
-reg                     ep2_data_bit_q;
-reg                     ep3_data_bit_q;
+reg [`USB_EP_NUM-1:0]   ep_data_bit_q;
 
 wire                    status_stage_w;
 
@@ -225,99 +222,51 @@ u_sie_tx
     .data_accept_o(tx_data_accept_w)
 );
 
+genvar i;
+integer j;
 // MUX for tx ep select
-always @ *
-begin
-    tx_data_valid_r = 1'b0;
-    tx_data_strb_r  = 1'b0;
-    tx_data_r       = 8'b0;
-    tx_data_last_r  = 1'b0;
+generate //{
+    always @(*)begin
+        tx_data_valid_r = 1'b0;
+        tx_data_strb_r  = 1'b0;
+        tx_data_r       = 8'b0;
+        tx_data_last_r  = 1'b0;
+        for(j=0; j<`USB_EP_NUM; j=j+1) begin //{
+            if (token_ep_w == j) begin
+                tx_data_valid_r = ep_tx_data_valid_i[j];
+                tx_data_strb_r  = ep_tx_data_strb_i[j];
+                tx_data_r       = ep_tx_data_i[j*`USB_EP0_DATA_DATA_W +:  `USB_EP0_DATA_DATA_W];
+                tx_data_last_r  = ep_tx_data_last_i[j];
+            end
+        end //}
+    end
+endgenerate //}
 
-    case (token_ep_w)
-    4'd0:
-    begin
-        tx_data_valid_r = ep_tx_data_valid_i[0];
-        tx_data_strb_r  = ep_tx_data_strb_i[0];
-        tx_data_r       = ep_tx_data_i[0*`USB_EP0_DATA_DATA_W +:  `USB_EP0_DATA_DATA_W];
-        tx_data_last_r  = ep_tx_data_last_i[0];
+generate //{
+    for(i=0; i<`USB_EP_NUM; i=i+1) begin
+        assign ep_tx_data_accept_o[i] = (tx_data_accept_w & (token_ep_w == i));
     end
-    4'd1:
-    begin
-        tx_data_valid_r = ep_tx_data_valid_i[1];
-        tx_data_strb_r  = ep_tx_data_strb_i[1];
-        tx_data_r       = ep_tx_data_i[1*`USB_EP0_DATA_DATA_W +:  `USB_EP0_DATA_DATA_W];
-        tx_data_last_r  = ep_tx_data_last_i[1];
-    end
-    4'd2:
-    begin
-        tx_data_valid_r = ep_tx_data_valid_i[2];
-        tx_data_strb_r  = ep_tx_data_strb_i[2];
-        tx_data_r       = ep_tx_data_i[2*`USB_EP0_DATA_DATA_W +:  `USB_EP0_DATA_DATA_W];
-        tx_data_last_r  = ep_tx_data_last_i[2];
-    end
-    4'd3:
-    begin
-        tx_data_valid_r = ep_tx_data_valid_i[3];
-        tx_data_strb_r  = ep_tx_data_strb_i[3];
-        tx_data_r       = ep_tx_data_i[3*`USB_EP0_DATA_DATA_W +:  `USB_EP0_DATA_DATA_W];
-        tx_data_last_r  = ep_tx_data_last_i[3];
-    end
-    default:
-        ;
-    endcase    
-end
+endgenerate //}
 
-assign ep_tx_data_accept_o[0] = tx_data_accept_w & (token_ep_w == 4'd0);
-assign ep_tx_data_accept_o[1] = tx_data_accept_w & (token_ep_w == 4'd1);
-assign ep_tx_data_accept_o[2] = tx_data_accept_w & (token_ep_w == 4'd2);
-assign ep_tx_data_accept_o[3] = tx_data_accept_w & (token_ep_w == 4'd3);
+generate //{
+    always @(*)begin
+        rx_space_r    =  1'b0;
+        tx_ready_r    =  1'b0;
+        ep_data_bit_r =  1'b0;
+        ep_stall_r    =  1'b0;
+        ep_iso_r      =  1'b0;
 
-always @ *
-begin
-    rx_space_r    = 1'b0;
-    tx_ready_r    = 1'b0;
-    ep_data_bit_r = 1'b0;
-
-    ep_stall_r = 1'b0;
-    ep_iso_r   = 1'b0;
-
-    case (token_ep_w)
-    4'd0:
-    begin
-        rx_space_r    = ep_rx_space_i[0];
-        tx_ready_r    = ep_tx_ready_i[0];
-        ep_data_bit_r = ep0_data_bit_q | status_stage_w;
-        ep_stall_r    = ep_stall_i[0];
-        ep_iso_r      = ep_iso_i[0];
+        for(j=0; j<`USB_EP_NUM; j=j+1) begin //{
+            if (token_ep_w ==j) begin
+                rx_space_r    = ep_rx_space_i[j];
+                tx_ready_r    = ep_tx_ready_i[j];
+                ep_data_bit_r = ep_data_bit_q[j] | status_stage_w;
+                ep_stall_r    = ep_stall_i[j];
+                ep_iso_r      = ep_iso_i[j];
+            end
+        end //}
     end
-    4'd1:
-    begin
-        rx_space_r    = ep_rx_space_i[1];
-        tx_ready_r    = ep_tx_ready_i[1];
-        ep_data_bit_r = ep1_data_bit_q | status_stage_w;
-        ep_stall_r    = ep_stall_i[1];
-        ep_iso_r      = ep_iso_i[1];
-    end
-    4'd2:
-    begin
-        rx_space_r    = ep_rx_space_i[2];
-        tx_ready_r    = ep_tx_ready_i[2];
-        ep_data_bit_r = ep2_data_bit_q | status_stage_w;
-        ep_stall_r    = ep_stall_i[2];
-        ep_iso_r      = ep_iso_i[2];
-    end
-    4'd3:
-    begin
-        rx_space_r    = ep_rx_space_i[3];
-        tx_ready_r    = ep_tx_ready_i[3];
-        ep_data_bit_r = ep3_data_bit_q | status_stage_w;
-        ep_stall_r    = ep_stall_i[3];
-        ep_iso_r      = ep_iso_i[3];
-    end
-    default:
-        ;
-    endcase
-end
+endgenerate //}
 
 always @ (posedge clk_i or negedge rstn_i)
 if (!rstn_i)
@@ -364,14 +313,12 @@ u_sie_rx
     .data_crc_err_o(rx_crc_err_o)
 );
 
-assign ep_rx_valid_o[0] = rx_enable_q & rx_data_valid_w & (token_ep_w == 4'd0);
-assign ep_rx_setup_o[0] = rx_setup_q & (token_ep_w == 4'd0);
-assign ep_rx_valid_o[1] = rx_enable_q & rx_data_valid_w & (token_ep_w == 4'd1);
-assign ep_rx_setup_o[1] = rx_setup_q & (token_ep_w == 4'd0);
-assign ep_rx_valid_o[2] = rx_enable_q & rx_data_valid_w & (token_ep_w == 4'd2);
-assign ep_rx_setup_o[2] = rx_setup_q & (token_ep_w == 4'd0);
-assign ep_rx_valid_o[3] = rx_enable_q & rx_data_valid_w & (token_ep_w == 4'd3);
-assign ep_rx_setup_o[3] = rx_setup_q & (token_ep_w == 4'd0);
+generate //{
+    for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
+        assign ep_rx_setup_o[i] = rx_setup_q & (token_ep_w == i);
+        assign ep_rx_valid_o[i] = rx_enable_q & rx_data_valid_w & (token_ep_w == i);
+    end //}
+endgenerate //}
 
 //-----------------------------------------------------------------
 // Next state
@@ -823,41 +770,25 @@ begin
     endcase
 end
 
-always @ (posedge clk_i or negedge rstn_i)
-if (!rstn_i)
-    ep0_data_bit_q <= 1'b0;
-else if (usb_rst_w)
-    ep0_data_bit_q <= 1'b0;
-else if (token_ep_w == 4'd0)
-    ep0_data_bit_q <= new_data_bit_r;
-always @ (posedge clk_i or negedge rstn_i)
-if (!rstn_i)
-    ep1_data_bit_q <= 1'b0;
-else if (usb_rst_w)
-    ep1_data_bit_q <= 1'b0;
-else if (token_ep_w == 4'd1)
-    ep1_data_bit_q <= new_data_bit_r;
-always @ (posedge clk_i or negedge rstn_i)
-if (!rstn_i)
-    ep2_data_bit_q <= 1'b0;
-else if (usb_rst_w)
-    ep2_data_bit_q <= 1'b0;
-else if (token_ep_w == 4'd2)
-    ep2_data_bit_q <= new_data_bit_r;
-always @ (posedge clk_i or negedge rstn_i)
-if (!rstn_i)
-    ep3_data_bit_q <= 1'b0;
-else if (usb_rst_w)
-    ep3_data_bit_q <= 1'b0;
-else if (token_ep_w == 4'd3)
-    ep3_data_bit_q <= new_data_bit_r;
+generate //{
+    for(i=0; i<`USB_EP_NUM; i=i+1) begin
+        always @ (posedge clk_i or negedge rstn_i) begin
+            if (!rstn_i)
+                ep_data_bit_q[i] <= 1'b0;
+            else if (usb_rst_w)
+                ep_data_bit_q[i] <= 1'b0;
+            else if (token_ep_w == i)
+                ep_data_bit_q[i] <= new_data_bit_r;
+        end
+    end
+endgenerate //}
 
 //-----------------------------------------------------------------
 // Interrupts set pulse
 //-----------------------------------------------------------------
 assign rst_intr_set_o = usb_rst_w;
 assign sof_intr_set_o = frame_valid_w;
-genvar i;
+
 generate //{
     for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
         // TODO: the data type of i

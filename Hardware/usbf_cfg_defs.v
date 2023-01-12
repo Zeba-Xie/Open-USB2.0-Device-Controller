@@ -23,9 +23,14 @@
 
 //-----------------------------------------------------------------
 // USB_EP_NUM: number of endpoints
-// Modification not supported
 //-----------------------------------------------------------------
 `define USB_EP_NUM     4
+
+//-----------------------------------------------------------------
+// USB_EP_STRIDE: the address stride of EP regs
+// Modification not supported
+//-----------------------------------------------------------------
+`define USB_EP_STRIDE  'h20
 
 //-----------------------------------------------------------------
 //                             GLOBAL
@@ -128,7 +133,7 @@
 `define USB_EP_INTSTS    8'h0C
 
     //--------------------------------------------------
-    // USB_EP1_INTSTS: 0-7
+    // bit[15:0] -> RX_READY EP 0-15
     //--------------------------------------------------
 
     `define USB_EP_INTSTS_EP0_RX_READY_DEFAULT      0
@@ -137,62 +142,50 @@
     `define USB_EP_INTSTS_EP0_RX_READY_W            1
     `define USB_EP_INTSTS_EP0_RX_READY_R            0:0
 
-    `define USB_EP_INTSTS_EP0_TX_COMPLETE_DEFAULT      0
-    `define USB_EP_INTSTS_EP0_TX_COMPLETE_B            1
-    `define USB_EP_INTSTS_EP0_TX_COMPLETE_T            1
-    `define USB_EP_INTSTS_EP0_TX_COMPLETE_W            1
-    `define USB_EP_INTSTS_EP0_TX_COMPLETE_R            1:1
-
-
-    //--------------------------------------------------
-    // USB_EP1_INTSTS: 8-15
-    //--------------------------------------------------
-
     `define USB_EP_INTSTS_EP1_RX_READY_DEFAULT      0
-    `define USB_EP_INTSTS_EP1_RX_READY_B            8
-    `define USB_EP_INTSTS_EP1_RX_READY_T            8
+    `define USB_EP_INTSTS_EP1_RX_READY_B            1
+    `define USB_EP_INTSTS_EP1_RX_READY_T            1
     `define USB_EP_INTSTS_EP1_RX_READY_W            1
-    `define USB_EP_INTSTS_EP1_RX_READY_R            8:8
-
-    `define USB_EP_INTSTS_EP1_TX_COMPLETE_DEFAULT      0
-    `define USB_EP_INTSTS_EP1_TX_COMPLETE_B            9
-    `define USB_EP_INTSTS_EP1_TX_COMPLETE_T            9
-    `define USB_EP_INTSTS_EP1_TX_COMPLETE_W            1
-    `define USB_EP_INTSTS_EP1_TX_COMPLETE_R            9:9
-
-
-    //--------------------------------------------------
-    // USB_EP2_INTSTS: 16-23
-    //--------------------------------------------------
+    `define USB_EP_INTSTS_EP1_RX_READY_R            1:1
 
     `define USB_EP_INTSTS_EP2_RX_READY_DEFAULT      0
-    `define USB_EP_INTSTS_EP2_RX_READY_B            16
-    `define USB_EP_INTSTS_EP2_RX_READY_T            16
+    `define USB_EP_INTSTS_EP2_RX_READY_B            2
+    `define USB_EP_INTSTS_EP2_RX_READY_T            2
     `define USB_EP_INTSTS_EP2_RX_READY_W            1
-    `define USB_EP_INTSTS_EP2_RX_READY_R            16:16
-
-    `define USB_EP_INTSTS_EP2_TX_COMPLETE_DEFAULT      0
-    `define USB_EP_INTSTS_EP2_TX_COMPLETE_B            17
-    `define USB_EP_INTSTS_EP2_TX_COMPLETE_T            17
-    `define USB_EP_INTSTS_EP2_TX_COMPLETE_W            1
-    `define USB_EP_INTSTS_EP2_TX_COMPLETE_R            17:17
-
-
-    //--------------------------------------------------
-    // USB_EP3_INTSTS: 24-31
-    //--------------------------------------------------
+    `define USB_EP_INTSTS_EP2_RX_READY_R            2:2
 
     `define USB_EP_INTSTS_EP3_RX_READY_DEFAULT      0
-    `define USB_EP_INTSTS_EP3_RX_READY_B            24
-    `define USB_EP_INTSTS_EP3_RX_READY_T            24
+    `define USB_EP_INTSTS_EP3_RX_READY_B            3
+    `define USB_EP_INTSTS_EP3_RX_READY_T            3
     `define USB_EP_INTSTS_EP3_RX_READY_W            1
-    `define USB_EP_INTSTS_EP3_RX_READY_R            24:24
+    `define USB_EP_INTSTS_EP3_RX_READY_R            3:3
+
+    //--------------------------------------------------
+    // bit[31:16] -> TX_COMPLETE: 16-31
+    //--------------------------------------------------
+    `define USB_EP_INTSTS_EP0_TX_COMPLETE_DEFAULT      0
+    `define USB_EP_INTSTS_EP0_TX_COMPLETE_B            16
+    `define USB_EP_INTSTS_EP0_TX_COMPLETE_T            16
+    `define USB_EP_INTSTS_EP0_TX_COMPLETE_W            1
+    `define USB_EP_INTSTS_EP0_TX_COMPLETE_R            16:16
+
+    `define USB_EP_INTSTS_EP1_TX_COMPLETE_DEFAULT      0
+    `define USB_EP_INTSTS_EP1_TX_COMPLETE_B            17
+    `define USB_EP_INTSTS_EP1_TX_COMPLETE_T            17
+    `define USB_EP_INTSTS_EP1_TX_COMPLETE_W            1
+    `define USB_EP_INTSTS_EP1_TX_COMPLETE_R            17:17
+
+    `define USB_EP_INTSTS_EP2_TX_COMPLETE_DEFAULT      0
+    `define USB_EP_INTSTS_EP2_TX_COMPLETE_B            18
+    `define USB_EP_INTSTS_EP2_TX_COMPLETE_T            18
+    `define USB_EP_INTSTS_EP2_TX_COMPLETE_W            1
+    `define USB_EP_INTSTS_EP2_TX_COMPLETE_R            18:18
 
     `define USB_EP_INTSTS_EP3_TX_COMPLETE_DEFAULT      0
-    `define USB_EP_INTSTS_EP3_TX_COMPLETE_B            25
-    `define USB_EP_INTSTS_EP3_TX_COMPLETE_T            25
+    `define USB_EP_INTSTS_EP3_TX_COMPLETE_B            19
+    `define USB_EP_INTSTS_EP3_TX_COMPLETE_T            19
     `define USB_EP_INTSTS_EP3_TX_COMPLETE_W            1
-    `define USB_EP_INTSTS_EP3_TX_COMPLETE_R            25:25
+    `define USB_EP_INTSTS_EP3_TX_COMPLETE_R            19:19
 
 //-----------------------------------------------------------------
 //                              EP0

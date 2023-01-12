@@ -252,26 +252,6 @@ assign func_addr_dev_addr_o = func_addr_dev_addr_r;
 
 //==========================================================================================
 //==========================================================================================
-localparam integer USB_EPx_CFG[`USB_EP_NUM-1:0] = { `USB_EP3_CFG,
-                                                    `USB_EP2_CFG,
-                                                    `USB_EP1_CFG,
-                                                    `USB_EP0_CFG};
-localparam integer USB_EPx_TX_CTRL[`USB_EP_NUM-1:0] = { `USB_EP3_TX_CTRL,
-                                                        `USB_EP2_TX_CTRL,
-                                                        `USB_EP1_TX_CTRL,
-                                                        `USB_EP0_TX_CTRL};
-localparam integer USB_EPx_RX_CTRL[`USB_EP_NUM-1:0] = { `USB_EP3_RX_CTRL,
-                                                        `USB_EP2_RX_CTRL,
-                                                        `USB_EP1_RX_CTRL,
-                                                        `USB_EP0_RX_CTRL};
-localparam integer USB_EPx_STS[`USB_EP_NUM-1:0] = { `USB_EP3_STS,
-                                                    `USB_EP2_STS,
-                                                    `USB_EP1_STS,
-                                                    `USB_EP0_STS};
-localparam integer USB_EPx_DATA[`USB_EP_NUM-1:0] = {`USB_EP3_DATA,
-                                                    `USB_EP2_DATA,
-                                                    `USB_EP1_DATA,
-                                                    `USB_EP0_DATA};
 genvar i;
 //// generate CSR for each endpoint
 //// the difference of endpoints is addr, 
@@ -351,11 +331,11 @@ generate //{
 
     wire [`USB_EP0_DATA_DATA_W-1:0] ep_tx_data[`USB_EP_NUM-1:0];
 
-    for(i=0; i<4; i=i+1)begin:regs_ep
+    for(i=0; i<`USB_EP_NUM; i=i+1)begin:regs_ep
         //-----------------------------------------------------------------
         // Register usb_ep_cfg
         //-----------------------------------------------------------------
-        assign sel_ep_cfg[i] = enable_i & (addr_i[7:0] == USB_EPx_CFG[i]);
+        assign sel_ep_cfg[i] = enable_i & (addr_i[7:0] == (`USB_EP0_CFG + i*`USB_EP_STRIDE));
         assign ep_cfg_wt_en[i] = wt_en_i & sel_ep_cfg[i];
         assign ep_cfg_rd_en[i] = rd_en_i & sel_ep_cfg[i];
 
@@ -409,7 +389,7 @@ generate //{
         //-----------------------------------------------------------------
         // Register usb_ep_tx_ctrl
         //-----------------------------------------------------------------
-        assign sel_ep_tx_ctrl[i] = enable_i & (addr_i[7:0] == USB_EPx_TX_CTRL[i]);
+        assign sel_ep_tx_ctrl[i] = enable_i & (addr_i[7:0] == (`USB_EP0_TX_CTRL + i*`USB_EP_STRIDE));
         assign ep_tx_ctrl_wt_en[i] = wt_en_i & sel_ep_tx_ctrl[i];
         assign ep_tx_ctrl_rd_en[i] = rd_en_i & sel_ep_tx_ctrl[i];
 
@@ -453,7 +433,7 @@ generate //{
         //-----------------------------------------------------------------
         // Register usb_ep_rx_ctrl
         //-----------------------------------------------------------------
-        assign sel_ep_rx_ctrl[i] = enable_i & (addr_i[7:0] == USB_EPx_RX_CTRL[i]);
+        assign sel_ep_rx_ctrl[i] = enable_i & (addr_i[7:0] == (`USB_EP0_RX_CTRL + i*`USB_EP_STRIDE));
         assign ep_rx_ctrl_wt_en[i] = wt_en_i & sel_ep_rx_ctrl[i];
         assign ep_rx_ctrl_rd_en[i] = rd_en_i & sel_ep_rx_ctrl[i];
 
@@ -486,14 +466,14 @@ generate //{
         //-----------------------------------------------------------------
         // Register usb_ep_sts
         //-----------------------------------------------------------------
-        assign sel_ep_sts[i] = enable_i & (addr_i[7:0] == USB_EPx_STS[i]);
+        assign sel_ep_sts[i] = enable_i & (addr_i[7:0] == (`USB_EP0_STS + i*`USB_EP_STRIDE));
         assign ep_sts_wt_en[i] = wt_en_i & sel_ep_sts[i];
         assign ep_sts_rd_en[i] = rd_en_i & sel_ep_sts[i];
 
         //-----------------------------------------------------------------
         // Register usb_ep_data
         //-----------------------------------------------------------------
-        assign sel_ep_data[i]= enable_i & (addr_i[7:0] == USB_EPx_DATA[i]);
+        assign sel_ep_data[i]= enable_i & (addr_i[7:0] == (`USB_EP0_DATA + i*`USB_EP_STRIDE));
         assign ep_data_wt_en[i] = wt_en_i & sel_ep_data[i];
         assign ep_data_rd_en[i] = rd_en_i & sel_ep_data[i];
 
@@ -514,141 +494,49 @@ wire sel_ep_intsts = enable_i & (addr_i[7:0] == `USB_EP_INTSTS);
 wire ep_intsts_wt_en = wt_en_i & sel_ep_intsts;
 wire ep_intsts_rd_en = rd_en_i & sel_ep_intsts;
 
-//-------------------------------------------
-// EP 0
-//-------------------------------------------
-// usb_ep_intsts_ep0_rx_ready [auto_clr]
-wire ep_intsts_ep0_rx_ready_r;
-wire ep_intsts_ep0_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP0_RX_READY_R];
-wire ep_intsts_ep0_rx_ready_clr = ep_intsts_ep0_rx_ready_r;
-wire ep_intsts_ep0_rx_ready_ena = ep_intsts_ep0_rx_ready_set | ep_intsts_ep0_rx_ready_clr;
-wire ep_intsts_ep0_rx_ready_next = ep_intsts_ep0_rx_ready_set | (~ep_intsts_ep0_rx_ready_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_RX_READY_W, `USB_EP_INTSTS_EP0_RX_READY_DEFAULT) 
-                ep_intsts_ep0_rx_ready_difflrd(
-                    ep_intsts_ep0_rx_ready_ena,ep_intsts_ep0_rx_ready_next,
-                    ep_intsts_ep0_rx_ready_r,
-                    hclk_i,rstn_i
-                );
+generate
+    wire [`USB_EP_NUM-1:0]  ep_intsts_rx_ready_r;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_rx_ready_set;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_rx_ready_clr;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_rx_ready_ena;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_rx_ready_next;
     
-// usb_ep_intsts_ep0_tx_complete [auto_clr]
-wire ep_intsts_ep0_tx_complete_r;
-wire ep_intsts_ep0_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP0_TX_COMPLETE_R];
-wire ep_intsts_ep0_tx_complete_clr = ep_intsts_ep0_tx_complete_r;
-wire ep_intsts_ep0_tx_complete_ena = ep_intsts_ep0_tx_complete_set | ep_intsts_ep0_tx_complete_clr;
-wire ep_intsts_ep0_tx_complete_next = ep_intsts_ep0_tx_complete_set | (~ep_intsts_ep0_tx_complete_clr);
+    wire [`USB_EP_NUM-1:0]  ep_intsts_tx_complete_r;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_tx_complete_set;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_tx_complete_clr;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_tx_complete_ena;
+    wire [`USB_EP_NUM-1:0]  ep_intsts_tx_complete_next;
 
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_TX_COMPLETE_W, `USB_EP_INTSTS_EP0_TX_COMPLETE_DEFAULT) 
-                ep_intsts_ep0_tx_complete_difflrd(
-                    ep_intsts_ep0_tx_complete_ena,ep_intsts_ep0_tx_complete_next,
-                    ep_intsts_ep0_tx_complete_r,
+    for(i=0; i<`USB_EP_NUM; i=i+1)begin
+        // rx-ready [auto_clr]
+        assign ep_intsts_rx_ready_set[i] = ep_intsts_wt_en & wdata_i[(`USB_EP_INTSTS_EP0_RX_READY_B+i) +: `USB_EP_INTSTS_EP0_RX_READY_W];
+        assign ep_intsts_rx_ready_clr[i] = ep_intsts_rx_ready_r[i];
+        assign ep_intsts_rx_ready_ena[i] = ep_intsts_rx_ready_set[i] | ep_intsts_rx_ready_clr[i];
+        assign ep_intsts_rx_ready_next[i] = ep_intsts_rx_ready_set[i] | (~ep_intsts_rx_ready_clr[i]);
+        usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_RX_READY_W, `USB_EP_INTSTS_EP0_RX_READY_DEFAULT) 
+                ep_intsts_rx_ready_difflrd(
+                    ep_intsts_rx_ready_ena[i],ep_intsts_rx_ready_next[i],
+                    ep_intsts_rx_ready_r[i],
                     hclk_i,rstn_i
                 );
 
-//-------------------------------------------
-// EP 1
-//-------------------------------------------
-// usb_ep_intsts_ep1_rx_ready [auto_clr]
-wire ep_intsts_ep1_rx_ready_r;
-wire ep_intsts_ep1_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP1_RX_READY_R];
-wire ep_intsts_ep1_rx_ready_clr = ep_intsts_ep1_rx_ready_r;
-wire ep_intsts_ep1_rx_ready_ena = ep_intsts_ep1_rx_ready_set | ep_intsts_ep1_rx_ready_clr;
-wire ep_intsts_ep1_rx_ready_next = ep_intsts_ep1_rx_ready_set | (~ep_intsts_ep1_rx_ready_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP1_RX_READY_W, `USB_EP_INTSTS_EP1_RX_READY_DEFAULT) 
-                ep_intsts_ep1_rx_ready_difflrd(
-                    ep_intsts_ep1_rx_ready_ena,ep_intsts_ep1_rx_ready_next,
-                    ep_intsts_ep1_rx_ready_r,
+        // tx-complete [auto_clr]
+        assign ep_intsts_tx_complete_set[i] = ep_intsts_wt_en & wdata_i[(`USB_EP_INTSTS_EP0_TX_COMPLETE_B+i) +: `USB_EP_INTSTS_EP0_TX_COMPLETE_W];
+        assign ep_intsts_tx_complete_clr[i] = ep_intsts_tx_complete_r[i];
+        assign ep_intsts_tx_complete_ena[i] = ep_intsts_tx_complete_set[i] | ep_intsts_tx_complete_clr[i];
+        assign ep_intsts_tx_complete_next[i] = ep_intsts_tx_complete_set[i] | (~ep_intsts_tx_complete_clr[i]);
+        usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP0_TX_COMPLETE_W, `USB_EP_INTSTS_EP0_TX_COMPLETE_DEFAULT) 
+                ep_intsts_tx_complete_difflrd(
+                    ep_intsts_tx_complete_ena[i],ep_intsts_tx_complete_next[i],
+                    ep_intsts_tx_complete_r[i],
                     hclk_i,rstn_i
                 );
-    
-// usb_ep_intsts_ep1_tx_complete [auto_clr]
-wire ep_intsts_ep1_tx_complete_r;
-wire ep_intsts_ep1_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP1_TX_COMPLETE_R];
-wire ep_intsts_ep1_tx_complete_clr = ep_intsts_ep1_tx_complete_r;
-wire ep_intsts_ep1_tx_complete_ena = ep_intsts_ep1_tx_complete_set | ep_intsts_ep1_tx_complete_clr;
-wire ep_intsts_ep1_tx_complete_next = ep_intsts_ep1_tx_complete_set | (~ep_intsts_ep1_tx_complete_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP1_TX_COMPLETE_W, `USB_EP_INTSTS_EP1_TX_COMPLETE_DEFAULT) 
-                ep_intsts_ep1_tx_complete_difflrd(
-                    ep_intsts_ep1_tx_complete_ena,ep_intsts_ep1_tx_complete_next,
-                    ep_intsts_ep1_tx_complete_r,
-                    hclk_i,rstn_i
-                );
-
-//-------------------------------------------
-// EP 2
-//-------------------------------------------
-// usb_ep_intsts_ep2_rx_ready [auto_clr]
-wire ep_intsts_ep2_rx_ready_r;
-wire ep_intsts_ep2_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP2_RX_READY_R];
-wire ep_intsts_ep2_rx_ready_clr = ep_intsts_ep2_rx_ready_r;
-wire ep_intsts_ep2_rx_ready_ena = ep_intsts_ep2_rx_ready_set | ep_intsts_ep2_rx_ready_clr;
-wire ep_intsts_ep2_rx_ready_next = ep_intsts_ep2_rx_ready_set | (~ep_intsts_ep2_rx_ready_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP2_RX_READY_W, `USB_EP_INTSTS_EP2_RX_READY_DEFAULT) 
-                ep_intsts_ep2_rx_ready_difflrd(
-                    ep_intsts_ep2_rx_ready_ena,ep_intsts_ep2_rx_ready_next,
-                    ep_intsts_ep2_rx_ready_r,
-                    hclk_i,rstn_i
-                );
-    
-// usb_ep_intsts_ep2_tx_complete [auto_clr]
-wire ep_intsts_ep2_tx_complete_r;
-wire ep_intsts_ep2_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP2_TX_COMPLETE_R];
-wire ep_intsts_ep2_tx_complete_clr = ep_intsts_ep2_tx_complete_r;
-wire ep_intsts_ep2_tx_complete_ena = ep_intsts_ep2_tx_complete_set | ep_intsts_ep2_tx_complete_clr;
-wire ep_intsts_ep2_tx_complete_next = ep_intsts_ep2_tx_complete_set | (~ep_intsts_ep2_tx_complete_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP2_TX_COMPLETE_W, `USB_EP_INTSTS_EP2_TX_COMPLETE_DEFAULT) 
-                ep_intsts_ep2_tx_complete_difflrd(
-                    ep_intsts_ep2_tx_complete_ena,ep_intsts_ep2_tx_complete_next,
-                    ep_intsts_ep2_tx_complete_r,
-                    hclk_i,rstn_i
-                );
-
-//-------------------------------------------
-// EP 3
-//-------------------------------------------
-// usb_ep_intsts_ep3_rx_ready [auto_clr]
-wire ep_intsts_ep3_rx_ready_r;
-wire ep_intsts_ep3_rx_ready_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP3_RX_READY_R];
-wire ep_intsts_ep3_rx_ready_clr = ep_intsts_ep3_rx_ready_r;
-wire ep_intsts_ep3_rx_ready_ena = ep_intsts_ep3_rx_ready_set | ep_intsts_ep3_rx_ready_clr;
-wire ep_intsts_ep3_rx_ready_next = ep_intsts_ep3_rx_ready_set | (~ep_intsts_ep3_rx_ready_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP3_RX_READY_W, `USB_EP_INTSTS_EP3_RX_READY_DEFAULT) 
-                ep_intsts_ep3_rx_ready_difflrd(
-                    ep_intsts_ep3_rx_ready_ena,ep_intsts_ep3_rx_ready_next,
-                    ep_intsts_ep3_rx_ready_r,
-                    hclk_i,rstn_i
-                );
-    
-// usb_ep_intsts_ep3_tx_complete [auto_clr]
-wire ep_intsts_ep3_tx_complete_r;
-wire ep_intsts_ep3_tx_complete_set = ep_intsts_wt_en & wdata_i[`USB_EP_INTSTS_EP3_TX_COMPLETE_R];
-wire ep_intsts_ep3_tx_complete_clr = ep_intsts_ep3_tx_complete_r;
-wire ep_intsts_ep3_tx_complete_ena = ep_intsts_ep3_tx_complete_set | ep_intsts_ep3_tx_complete_clr;
-wire ep_intsts_ep3_tx_complete_next = ep_intsts_ep3_tx_complete_set | (~ep_intsts_ep3_tx_complete_clr);
-
-usbf_gnrl_dfflrd #(`USB_EP_INTSTS_EP3_TX_COMPLETE_W, `USB_EP_INTSTS_EP3_TX_COMPLETE_DEFAULT) 
-                ep_intsts_ep3_tx_complete_difflrd(
-                    ep_intsts_ep3_tx_complete_ena,ep_intsts_ep3_tx_complete_next,
-                    ep_intsts_ep3_tx_complete_r,
-                    hclk_i,rstn_i
-                );
+    end
+endgenerate
 
 //// 
-wire [`USB_EP_NUM-1:0] ep_intsts_rx_ready_clr = { ep_intsts_ep3_rx_ready_r,
-                                ep_intsts_ep2_rx_ready_r,
-                                ep_intsts_ep1_rx_ready_r,
-                                ep_intsts_ep0_rx_ready_r
-                                };
-wire [`USB_EP_NUM-1:0] ep_intsts_tx_complete_clr = {  ep_intsts_ep3_tx_complete_r,
-                                    ep_intsts_ep2_tx_complete_r,
-                                    ep_intsts_ep1_tx_complete_r,
-                                    ep_intsts_ep0_tx_complete_r
-                                    };
+wire [`USB_EP_NUM-1:0] ep_intsts_rx_ready_clr = ep_intsts_rx_ready_r;
+wire [`USB_EP_NUM-1:0] ep_intsts_tx_complete_clr = ep_intsts_tx_complete_r;
 //==========================================================================================
 // Register Write }
 //==========================================================================================
@@ -707,19 +595,17 @@ end
 // Register usb_ep_intsts
 //-----------------------------------------------------------------
 reg [32-1:0] ep_intsts_r;
-always @(*)begin
-    ep_intsts_r = 32'b0;
+integer j;
+generate
+    always @(*)begin
+        ep_intsts_r = 32'b0;
+        for(j=0; j<`USB_EP_NUM; j=j+1)begin
+            ep_intsts_r[(`USB_EP_INTSTS_EP0_RX_READY_B+j) +: `USB_EP_INTSTS_EP0_RX_READY_W] = intr_ep_rx_ready_r[j];
+            ep_intsts_r[(`USB_EP_INTSTS_EP0_TX_COMPLETE_B+j) +: `USB_EP_INTSTS_EP0_TX_COMPLETE_W] = intr_ep_tx_complete_r[j];
 
-    ep_intsts_r[`USB_EP_INTSTS_EP0_RX_READY_R] = intr_ep_rx_ready_r[0];
-    ep_intsts_r[`USB_EP_INTSTS_EP1_RX_READY_R] = intr_ep_rx_ready_r[1];
-    ep_intsts_r[`USB_EP_INTSTS_EP2_RX_READY_R] = intr_ep_rx_ready_r[2];
-    ep_intsts_r[`USB_EP_INTSTS_EP3_RX_READY_R] = intr_ep_rx_ready_r[3];
-
-    ep_intsts_r[`USB_EP_INTSTS_EP0_TX_COMPLETE_R] = intr_ep_tx_complete_r[0];
-    ep_intsts_r[`USB_EP_INTSTS_EP1_TX_COMPLETE_R] = intr_ep_tx_complete_r[1];
-    ep_intsts_r[`USB_EP_INTSTS_EP2_TX_COMPLETE_R] = intr_ep_tx_complete_r[2];
-    ep_intsts_r[`USB_EP_INTSTS_EP3_TX_COMPLETE_R] = intr_ep_tx_complete_r[3];
-end
+        end
+    end
+endgenerate
 
 reg [32-1:0] ep_cfg_r[`USB_EP_NUM-1:0];
 reg [32-1:0] ep_tx_ctrl_r[`USB_EP_NUM-1:0]; 
@@ -729,7 +615,6 @@ wire ep_data_ena[`USB_EP_NUM-1:0];
 wire [32-1:0] ep_data_next[`USB_EP_NUM-1:0];
 wire [32-1:0] ep_data_r[`USB_EP_NUM-1:0];
 
-integer j;
 generate //{
     always @(*)begin
         for(j=0; j<`USB_EP_NUM; j=j+1) begin //{
