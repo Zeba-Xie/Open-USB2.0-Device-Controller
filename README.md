@@ -21,7 +21,7 @@ This component is a simple USB Peripheral Interface (Device) implementation with
 
 ## Architecture
 
-![Architecture](picture/architecture.svg)
+![Architecture](Picture/architecture.svg)
 
 ## Register Map
 
