@@ -109,6 +109,12 @@ module usbf_sync(
     ,output [1:0]                                   sh2pb_func_ctrl_phy_xcvrselect_o
     ,output [1:0]                                   sh2pb_func_ctrl_phy_opmode_o
     ,input  [1:0]                                   p2hb_func_stat_linestate_i
+
+    `ifdef USB_ITF_ICB
+    ,output					                        mem_wt_ready_o // MEM fifos are in PHY clock domain
+	,output					                        mem_rd_ready_o // so writing/reading data to fifo needs waiting CDC
+    `endif
+
 );
 
 //-----------------------------------------------------------------
@@ -204,16 +210,17 @@ set_pulse_sync #(`USB_EP_NUM) ep_rx_ctrl_rx_accept_sync(
     .din(ep_rx_ctrl_rx_accept_i),
     .dout(sh2pt_ep_rx_ctrl_rx_accept_o)
 );
-bus_sync #(`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM) ep_tx_ctrl_tx_len_sync(
-    .clk_s(hclk_i),
-    .clk_d(phy_clk_i),
-    .rstn(rstn_i),
-    .din(ep_tx_ctrl_tx_len_i),
-    .dout(sh2pb_ep_tx_ctrl_tx_len_o)
-);
+// bus_sync #(`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM) ep_tx_ctrl_tx_len_sync(
+//     .clk_s(hclk_i),
+//     .clk_d(phy_clk_i),
+//     .rstn(rstn_i),
+//     .din(ep_tx_ctrl_tx_len_i),
+//     .dout(sh2pb_ep_tx_ctrl_tx_len_o)
+// );
+assign sh2pb_ep_tx_ctrl_tx_len_o = ep_tx_ctrl_tx_len_i;
+
 // ======== phyclk -> hclk
-// TODO 此处将所有信号都通过的bus总线
-wire [`USB_EP_NUM*5+`USB_EP0_STS_RX_COUNT_W*`USB_EP_NUM] ep_sts_in, s_ep_sts_out;
+wire [`USB_EP_NUM*5+`USB_EP0_STS_RX_COUNT_W*`USB_EP_NUM-1:0] ep_sts_in, s_ep_sts_out;
 bus_sync #(`USB_EP_NUM*5+`USB_EP0_STS_RX_COUNT_W*`USB_EP_NUM) ep_sts_sync(
     .clk_s(phy_clk_i),
     .clk_d(hclk_i),
@@ -268,27 +275,70 @@ set_pulse_sync #(`USB_EP_NUM) ep_data_wt_req_sync(
     .din(ep_data_wt_req_i),
     .dout(sh2pt_ep_data_wt_req_o)
 );
-bus_sync #(`USB_EP0_DATA_DATA_W*`USB_EP_NUM) ep_tx_data_sync(
-    .clk_s(hclk_i),
-    .clk_d(phy_clk_i),
-    .rstn(rstn_i),
-    .din(ep_tx_data_i),
-    .dout(sh2pb_ep_tx_data_o)
-);
+// bus_sync #(`USB_EP0_DATA_DATA_W*`USB_EP_NUM) ep_tx_data_sync(
+//     .clk_s(hclk_i),
+//     .clk_d(phy_clk_i),
+//     .rstn(rstn_i),
+//     .din(ep_tx_data_i),
+//     .dout(sh2pb_ep_tx_data_o)
+// );
+
+assign sh2pb_ep_tx_data_o = ep_tx_data_i;
+
 // ======== phyclk -> hclk
-bus_sync #(`USB_EP0_DATA_DATA_W*`USB_EP_NUM) ep_rx_data_sync(
+// actual rx_data valid in sh2pt_ep_data_rd_req_o clk
+// so, register rx_data
+wire [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0] actual_rx_data_r;
+wire actual_rx_data_ena = |sh2pt_ep_data_rd_req_o;
+wire [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0] actual_rx_data_next = p2hb_ep_rx_data_i;
+usbf_gnrl_dfflrd #(`USB_EP0_DATA_DATA_W*`USB_EP_NUM, {`USB_EP0_DATA_DATA_W*`USB_EP_NUM{1'b0}}) 
+                actual_rx_data_difflrd(
+                    actual_rx_data_ena,actual_rx_data_next,
+                    actual_rx_data_r,
+                    phy_clk_i,rstn_i
+                );
+
+// bus_sync #(`USB_EP0_DATA_DATA_W*`USB_EP_NUM) ep_rx_data_sync(
+//     .clk_s(phy_clk_i),
+//     .clk_d(hclk_i),
+//     .rstn(rstn_i),
+//     .din(p2hb_ep_rx_data_i),
+//     .dout(ep_rx_data_o)
+// );
+assign ep_rx_data_o = actual_rx_data_r;
+
+// mem_wt_ready and mem rd ready pulse generate
+`ifdef USB_ITF_ICB
+
+// sync sh2pt_ep_data_rd_req_o from phy to H clock
+wire [`USB_EP_NUM-1:0] mem_rd_ready;
+set_pulse_sync #(`USB_EP_NUM) sh2pt_ep_data_rd_req_sync(
     .clk_s(phy_clk_i),
     .clk_d(hclk_i),
     .rstn(rstn_i),
-    .din(p2hb_ep_rx_data_i),
-    .dout(ep_rx_data_o)
+    .din(sh2pt_ep_data_rd_req_o),
+    .dout(mem_rd_ready)
 );
+assign mem_rd_ready_o = |mem_rd_ready;
+
+wire [`USB_EP_NUM-1:0] mem_wt_ready;
+set_pulse_sync #(`USB_EP_NUM) sh2pt_ep_data_wt_req_sync(
+    .clk_s(phy_clk_i),
+    .clk_d(hclk_i),
+    .rstn(rstn_i),
+    .din(sh2pt_ep_data_wt_req_o),
+    .dout(mem_wt_ready)
+);
+assign mem_wt_ready_o = |mem_wt_ready;
+
+
+`endif
 
 //-----------------------------------------------------------------
 // Device interface
 //-----------------------------------------------------------------
 // ======== hclk -> phyclk
-wire [3+4] func_ctrl_in, func_ctrl_out;
+wire [3+4-1:0] func_ctrl_in, func_ctrl_out;
 assign func_ctrl_in = {func_ctrl_phy_dmpulldown_i,
                         func_ctrl_phy_dppulldown_i,
                         func_ctrl_phy_termselect_i,
@@ -307,7 +357,7 @@ bus_sync #(7) func_ctrl_sync(
     .dout(func_ctrl_out)
 );
 // ======== phyclk -> hclk
-bus_sync #(`USB_EP_NUM*5+`USB_EP0_STS_RX_COUNT_W*`USB_EP_NUM) func_stat_linestate_sync(
+bus_sync #(2) func_stat_linestate_sync(
     .clk_s(phy_clk_i),
     .clk_d(hclk_i),
     .rstn(rstn_i),

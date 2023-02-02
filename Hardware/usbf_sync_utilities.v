@@ -129,8 +129,8 @@ module set_level_sync #(
 )(
 	input  clk_d, // destination clk
 	input  rst_n,
-	input  din,
-	output dout
+	input  [DW-1:0] din,
+	output [DW-1:0] dout
 );
 genvar i;
 generate //{
@@ -138,7 +138,7 @@ generate //{
     for(i=0; i<DW; i=i+1)begin: sync
         level_sync #(STAGE) u_level_sync( 
             .clk_d (clk_d),
-            .rst_n (rstn),
+            .rst_n (rst_n),
             .din   (din[i]), 
             .dout  (dout[i])
         );
@@ -259,7 +259,7 @@ level_sync #(2) d2s_tgl_sync(
 
 // data in
 wire [DW-1:0] data_in_r;
-wire [DW-1:0] data_in_ena = {DW{data_in_en}};
+wire data_in_ena = data_in_en;
 wire [DW-1:0] data_in_nxt = din;
 usbf_gnrl_dfflrd #(DW, {DW{1'b0}}) 
                 data_in_difflrd(
@@ -269,7 +269,7 @@ usbf_gnrl_dfflrd #(DW, {DW{1'b0}})
                 );
 
 // data out
-wire [DW-1:0] data_out_ena = {DW{data_out_en}};
+wire data_out_ena = data_out_en;
 wire [DW-1:0] data_out_nxt = data_in_r;
 usbf_gnrl_dfflrd #(DW, {DW{1'b0}}) 
                 data_out_difflrd(

@@ -3,7 +3,7 @@
 // Control and status module
 // This module reads and writes control and status registers 
 // according to the instruction of BIU.
-// This module works in the PHY clock domain completely.
+// This module works in the H clock domain completely.
 // 
 // Version: V1.0
 // Created by Zeba-Xie @github
@@ -25,6 +25,10 @@ module usbf_csr(
     ,input [31:0]                                   addr_i
     ,input [31:0]                                   wdata_i
     ,output[31:0]                                   rdata_o
+    `ifdef USB_ITF_ICB
+	,output					                        wt_ready_o // MEM fifos are in PHY clock domain
+	,output					                        rd_ready_o // so writing/reading data to fifo needs waiting CDC
+	`endif
 
     ////// Device core interface
     ,output                                         func_ctrl_hs_chirp_en_o
@@ -68,7 +72,11 @@ module usbf_csr(
 
     ////// Others
     ,output                                         intr_o
-    
+
+    `ifdef USB_ITF_ICB
+	,input					                        mem_wt_ready_i // MEM fifos are in PHY clock domain
+	,input					                        mem_rd_ready_i // so writing/reading data to fifo needs waiting CDC
+	`endif
 );
 //==========================================================================================
 // Register Write {
@@ -479,7 +487,9 @@ generate //{
 
         // usb_ep_data_data [external]
         //// out to tx fifo
-        assign ep_tx_data[i] = {`USB_EP0_DATA_DATA_W{ep_data_wt_en[i]}} & wdata_i[`USB_EP0_DATA_DATA_R];
+        // assign ep_tx_data[i] = {`USB_EP0_DATA_DATA_W{ep_data_wt_en[i]}} & wdata_i[`USB_EP0_DATA_DATA_R];
+        // data must keep
+        assign ep_tx_data[i] = wdata_i[`USB_EP0_DATA_DATA_R];
         assign ep_tx_data_o[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W] = ep_tx_data[i];
 
 
@@ -535,8 +545,8 @@ generate
 endgenerate
 
 //// 
-wire [`USB_EP_NUM-1:0] ep_intsts_rx_ready_clr = ep_intsts_rx_ready_r;
-wire [`USB_EP_NUM-1:0] ep_intsts_tx_complete_clr = ep_intsts_tx_complete_r;
+// wire [`USB_EP_NUM-1:0] ep_intsts_rx_ready_clr = ep_intsts_rx_ready_r;
+// wire [`USB_EP_NUM-1:0] ep_intsts_tx_complete_clr = ep_intsts_tx_complete_r;
 //==========================================================================================
 // Register Write }
 //==========================================================================================
@@ -653,6 +663,13 @@ generate //{
     //-----------------------------------------------------------------
     // Register usb_ep_data
     //-----------------------------------------------------------------
+    `ifdef USB_ITF_ICB
+    for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
+        assign ep_data_r[i][7:0] = ep_rx_data_i[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W];
+        assign ep_data_r[i][31:8] = 24'b0;
+    end //}
+
+    `else // ~USB_ITF_ICB
     for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
         assign ep_data_ena[i] = ep_data_rd_en[i];
         assign ep_data_next[i][7:0] = ep_rx_data_i[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W];
@@ -664,6 +681,7 @@ generate //{
                             hclk_i,rstn_i
                         );        
     end //}
+    `endif // USB_ITF_ICB
 
 endgenerate //}
 
@@ -707,6 +725,34 @@ generate //{
         assign ep_data_wt_req_o[i] = ep_data_wt_en[i];
     end //}
 endgenerate //}
+
+//-----------------------------------------------------------------
+// wt_ready and rd_ready
+// Just MEM read and write need waiting CDC.
+// It's a pulse signal.
+//-----------------------------------------------------------------
+`ifdef USB_ITF_ICB
+reg mem_wt_access;
+reg mem_rd_access;
+reg mem_access   ;
+generate //{
+    always @(*)begin
+        mem_wt_access = 1'b0;
+        mem_rd_access = 1'b0;
+        mem_access    = 1'b0;
+        for(j=0; j<`USB_EP_NUM; j=j+1) begin //{
+            mem_wt_access = mem_wt_access | ep_data_wt_en[j];
+            mem_rd_access = mem_rd_access | ep_data_rd_en[j];
+            mem_access    = mem_access    | sel_ep_data[j];
+        end //}
+    end
+endgenerate //}
+
+
+assign wt_ready_o = mem_access ?    mem_wt_ready_i : wt_en_i;
+assign rd_ready_o = mem_access ?    mem_rd_ready_i : rd_en_i;
+
+`endif
 
 //==========================================================================================
 // Interrupt {

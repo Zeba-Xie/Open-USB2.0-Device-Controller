@@ -11,8 +11,29 @@
 // Modified by Zeba-Xie @github:
 // .Added USB_EP_INTSTS
 // .Adjusted address 
-// 
+// .Added defines
 //=================================================================
+
+//-----------------------------------------------------------------
+// USB_ITF_AHB
+// define  : AHB slave interface
+// undefine: Others
+// warning : USB_ITF_AHB or USB_ITF_ICB must define one.
+//-----------------------------------------------------------------
+// `define USB_ITF_AHB
+
+//-----------------------------------------------------------------
+// USB_ITF_ICB
+// define  : ICB slave interface (for E203)
+// undefine: Others
+// warning : USB_ITF_AHB or USB_ITF_ICB must define one.
+//-----------------------------------------------------------------
+`define USB_ITF_ICB
+
+`ifdef USB_ITF_ICB
+    // must define USB BASE ADDR
+    `define USB_BASE_ADDR_31_12 20'h10042 
+`endif
 
 //-----------------------------------------------------------------
 // USB_REG_FIFO
