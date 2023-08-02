@@ -21,7 +21,7 @@ This component is a simple USB Peripheral Interface (Device) implementation with
 
 ## Architecture
 
-![Architecture](Picture/architecture.svg)
+![Architecture](Pictures/architecture.svg)
 
 ## Register Map
 
@@ -131,12 +131,12 @@ To make this functional on your platform:
 # Test
 
 Verified under simulation then tested on FPGA as a USB-CDC mode peripheral (USB serial port) against Windows PCs.
-![Architecture](Picture/Serial_port_test.png)
+![Architecture](Pictures/Serial_port_test.png)
 
 - Integrated to E203 SoC through ICB interface, using MCU200T FPGA development board and USB3300 PHY.
 - Integrated to another RISC-V SoC through AHB interface, using MCU200T FPGA development board and USB3300 PHY.
 
-![Architecture](Picture/Device_tree_viewer.png)
+![Architecture](Pictures/Device_tree_viewer.png)
 
 Tips: If Windows cannot recongnize the device, you need to update its driver manually.
 
