@@ -14,6 +14,7 @@
 // |------|           |-----|       |-----------|
 //    ^                  ^                ^
 //    |------------------|----------------|
+//                       v
 //                    |SYNC |
 //                       v
 //                    | CSR |
@@ -27,36 +28,36 @@
 
 module usbf_device(
      input                  hclk_i
-    ,input			        hrstn_i
+    ,input                  hrstn_i
 
     `ifdef USB_ITF_AHB
-	////// AHB slave interface
-    ,input			        hsel_i
-    ,input			        hwrite_i
-    ,input	[1:0]	        htrans_i
-    ,input	[2:0]	        hburst_i
-    ,input	[31:0]	        hwdata_i
-    ,input	[31:0]	        haddr_i
-    ,input  [2:0]	        hsize_i
-    ,input 			        hready_i
-    ,output			        hready_o
-    ,output	[1:0]	        hresp_o
+    ////// AHB slave interface
+    ,input                  hsel_i
+    ,input                  hwrite_i
+    ,input  [1:0]           htrans_i
+    ,input  [2:0]           hburst_i
+    ,input  [31:0]          hwdata_i
+    ,input  [31:0]          haddr_i
+    ,input  [2:0]           hsize_i
+    ,input                  hready_i
+    ,output                 hready_o
+    ,output [1:0]           hresp_o
     ,output [31:0]          hrdata_o
     `endif
 
-	`ifdef USB_ITF_ICB
-	////// ICB slave interface
-	// CMD
-	,input           		icb_cmd_valid_i
-	,output          		icb_cmd_ready_o
-	,input  [32-1:0] 		icb_cmd_addr_i
-	,input           		icb_cmd_read_i
-	,input  [32-1:0] 		icb_cmd_wdata_i
-	// RSP
-	,output          		icb_rsp_valid_o
-	,input           		icb_rsp_ready_i
-	,output [32-1:0] 		icb_rsp_rdata_o
-	`endif
+    `ifdef USB_ITF_ICB
+    ////// ICB slave interface
+    // CMD
+    ,input                  icb_cmd_valid_i
+    ,output                 icb_cmd_ready_o
+    ,input  [32-1:0]        icb_cmd_addr_i
+    ,input                  icb_cmd_read_i
+    ,input  [32-1:0]        icb_cmd_wdata_i
+    // RSP
+    ,output                 icb_rsp_valid_o
+    ,input                  icb_rsp_ready_i
+    ,output [32-1:0]        icb_rsp_rdata_o
+    `endif
 
     ////// UTMI interface
     ,input                  phy_clk_i
@@ -155,9 +156,9 @@ wire    [`USB_EP_NUM-1:0]                       ep_data_rd_req;
 wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  ep_tx_data;
 
 ////// CSR<-->SYNC
-wire                                        	csr_utmi_dmpulldown;
-wire                                        	csr_utmi_dppulldown;
-wire                                        	csr_utmi_termselect;
+wire                                            csr_utmi_dmpulldown;
+wire                                            csr_utmi_dppulldown;
+wire                                            csr_utmi_termselect;
 wire    [1:0]                                   csr_utmi_xcvrselect;
 wire    [1:0]                                   csr_utmi_op_mode;
 wire    [1:0]                                   csr_utmi_linestate;
@@ -207,7 +208,7 @@ usbf_biu u_usbf_biu(
     `endif
 
     `ifdef USB_ITF_ICB
-	////// ICB slave interface
+    ////// ICB slave interface
     .icb_cmd_valid_i                    (icb_cmd_valid_i),
     .icb_cmd_ready_o                    (icb_cmd_ready_o),
     .icb_cmd_addr_i                     (icb_cmd_addr_i ),

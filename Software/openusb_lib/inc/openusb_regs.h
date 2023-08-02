@@ -16,9 +16,9 @@ typedef volatile unsigned int reg32_t;
 //-----------------------------------------------------------------
 #define  USB_BASE        (0x10042000)
 
-#define	 USB_FUNC_CTRL	 (USB_BASE | 0x00)
-#define	 USB_FUNC_STAT	 (USB_BASE | 0x04)
-#define	 USB_FUNC_ADDR	 (USB_BASE | 0x08)
+#define  USB_FUNC_CTRL   (USB_BASE | 0x00)
+#define  USB_FUNC_STAT   (USB_BASE | 0x04)
+#define  USB_FUNC_ADDR   (USB_BASE | 0x08)
 #define  USB_EP_INTSTS   (USB_BASE | 0x0C)
 
 #define  USB_EP0_CFG     (USB_BASE | 0x20)
@@ -204,19 +204,19 @@ typedef union _OPEN_USB_EP_INTSTS_TypeDef{
         1;
         uint32_t ep2_rx_ready :    // W1C
         1;
-		uint32_t ep3_rx_ready :    // W1C
+        uint32_t ep3_rx_ready :    // W1C
         1;
         
         uint32_t reserved4_15 :
         (16-4);
 
-		uint32_t ep0_tx_complete : // W1C
+        uint32_t ep0_tx_complete : // W1C
         1;
-		uint32_t ep1_tx_complete : // W1C
+        uint32_t ep1_tx_complete : // W1C
         1;
-		uint32_t ep2_tx_complete : // W1C
+        uint32_t ep2_tx_complete : // W1C
         1;
-		uint32_t ep3_tx_complete : // W1C
+        uint32_t ep3_tx_complete : // W1C
         1;
 
         uint32_t reserved20_31 :

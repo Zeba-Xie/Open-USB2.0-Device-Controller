@@ -21,16 +21,16 @@
 `include "usbf_cfg_defs.v"
 
 module usbf_sync(
-	 input                                          phy_clk_i
-	,input                                          hclk_i
+     input                                          phy_clk_i
+    ,input                                          hclk_i
     ,input                                          rstn_i
 
-	//-------------------------------hclk domain, connect to CSR
+    //-------------------------------hclk domain, connect to CSR
     ////// Device core interface
-    ,input                                         	func_ctrl_hs_chirp_en_i
-    ,input [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0]        	func_addr_dev_addr_i
-    ,input [`USB_EP_NUM-1:0]                       	ep_cfg_stall_ep_i
-    ,input [`USB_EP_NUM-1:0]                       	ep_cfg_iso_i
+    ,input                                          func_ctrl_hs_chirp_en_i
+    ,input [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0]         func_addr_dev_addr_i
+    ,input [`USB_EP_NUM-1:0]                        ep_cfg_stall_ep_i
+    ,input [`USB_EP_NUM-1:0]                        ep_cfg_iso_i
     ,output  [`USB_FUNC_STAT_FRAME_W-1:0]           func_stat_frame_o
     ,output                                         rst_intr_set_o
     ,output                                         sof_intr_set_o
@@ -38,9 +38,9 @@ module usbf_sync(
     ,output  [`USB_EP_NUM-1:0]                      ep_tx_complete_intr_set_o
 
     ////// EPU(endpoint) interface
-    ,input [`USB_EP_NUM-1:0]                       	ep_tx_ctrl_tx_start_i
-    ,input [`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM-1:0]  ep_tx_ctrl_tx_len_i     
-    ,input [`USB_EP_NUM-1:0]                       	ep_rx_ctrl_rx_accept_i        
+    ,input [`USB_EP_NUM-1:0]                        ep_tx_ctrl_tx_start_i
+    ,input [`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM-1:0] ep_tx_ctrl_tx_len_i     
+    ,input [`USB_EP_NUM-1:0]                        ep_rx_ctrl_rx_accept_i        
     
     ,output  [`USB_EP_NUM-1:0]                      ep_sts_tx_err_o
     ,output  [`USB_EP_NUM-1:0]                      ep_sts_tx_busy_o
@@ -51,24 +51,24 @@ module usbf_sync(
 
     ////// MEM(memory) interface
         // RX
-    ,input [`USB_EP_NUM-1:0]                       	ep_rx_ctrl_rx_flush_i      
-    ,input [`USB_EP_NUM-1:0]                       	ep_data_rd_req_i   
+    ,input [`USB_EP_NUM-1:0]                        ep_rx_ctrl_rx_flush_i      
+    ,input [`USB_EP_NUM-1:0]                        ep_data_rd_req_i   
     ,output  [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0] ep_rx_data_o 
         // TX
-    ,input [`USB_EP_NUM-1:0]                       	ep_tx_ctrl_tx_flush_i
-    ,input [`USB_EP_NUM-1:0]                       	ep_data_wt_req_i
-    ,input [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  	ep_tx_data_i
+    ,input [`USB_EP_NUM-1:0]                        ep_tx_ctrl_tx_flush_i
+    ,input [`USB_EP_NUM-1:0]                        ep_data_wt_req_i
+    ,input [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]   ep_tx_data_i
     
     ////// Device interface
-    ,input                                         	func_ctrl_phy_dmpulldown_i
-    ,input                                         	func_ctrl_phy_dppulldown_i
-    ,input                                         	func_ctrl_phy_termselect_i
-    ,input [1:0]                                   	func_ctrl_phy_xcvrselect_i
-    ,input [1:0]                                   	func_ctrl_phy_opmode_i
+    ,input                                          func_ctrl_phy_dmpulldown_i
+    ,input                                          func_ctrl_phy_dppulldown_i
+    ,input                                          func_ctrl_phy_termselect_i
+    ,input [1:0]                                    func_ctrl_phy_xcvrselect_i
+    ,input [1:0]                                    func_ctrl_phy_opmode_i
     ,output  [1:0]                                  func_stat_linestate_o
 
-	//-------------------------------phy domain, connect to phy domain modules
-	////// Device core interface
+    //-------------------------------phy domain, connect to phy domain modules
+    ////// Device core interface
     ,output                                         sh2pl_func_ctrl_hs_chirp_en_o
     ,output [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0]        sh2pb_func_addr_dev_addr_o 
     ,output [`USB_EP_NUM-1:0]                       sh2pl_ep_cfg_stall_ep_o // TODO
@@ -82,7 +82,7 @@ module usbf_sync(
 
     ////// EPU(endpoint) interface
     ,output [`USB_EP_NUM-1:0]                       sh2pt_ep_tx_ctrl_tx_start_o
-    ,output [`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM-1:0]   sh2pb_ep_tx_ctrl_tx_len_o     
+    ,output [`USB_EP0_TX_CTRL_TX_LEN_W*`USB_EP_NUM-1:0] sh2pb_ep_tx_ctrl_tx_len_o     
     ,output [`USB_EP_NUM-1:0]                       sh2pt_ep_rx_ctrl_rx_accept_o        
     
     ,input  [`USB_EP_NUM-1:0]                       p2hl_ep_sts_tx_err_i
@@ -111,8 +111,8 @@ module usbf_sync(
     ,input  [1:0]                                   p2hb_func_stat_linestate_i
 
     `ifdef USB_ITF_ICB
-    ,output					                        mem_wt_ready_o // MEM fifos are in PHY clock domain
-	,output					                        mem_rd_ready_o // so writing/reading data to fifo needs waiting CDC
+    ,output                                         mem_wt_ready_o // MEM fifos are in PHY clock domain
+    ,output                                         mem_rd_ready_o // so writing/reading data to fifo needs waiting CDC
     `endif
 
 );
@@ -123,24 +123,24 @@ module usbf_sync(
 // ======== hclk -> phyclk
 
 set_level_sync #(2, 1) func_ctrl_hs_chirp_en_sync(
-	.clk_d(phy_clk_i),
-	.rst_n(rstn_i),
-	.din(func_ctrl_hs_chirp_en_i),
-	.dout(sh2pl_func_ctrl_hs_chirp_en_o)
+    .clk_d(phy_clk_i),
+    .rst_n(rstn_i),
+    .din(func_ctrl_hs_chirp_en_i),
+    .dout(sh2pl_func_ctrl_hs_chirp_en_o)
 );
 
 set_level_sync #(2, `USB_EP_NUM) ep_cfg_stall_ep_sync(
-	.clk_d(phy_clk_i),
-	.rst_n(rstn_i),
-	.din(ep_cfg_stall_ep_i),
-	.dout(sh2pl_ep_cfg_stall_ep_o)
+    .clk_d(phy_clk_i),
+    .rst_n(rstn_i),
+    .din(ep_cfg_stall_ep_i),
+    .dout(sh2pl_ep_cfg_stall_ep_o)
 );
 
 set_level_sync #(2,`USB_EP_NUM) ep_cfg_iso_sync(
-	.clk_d(phy_clk_i),
-	.rst_n(rstn_i),
-	.din(ep_cfg_iso_i),
-	.dout(sh2pl_ep_cfg_iso_o)
+    .clk_d(phy_clk_i),
+    .rst_n(rstn_i),
+    .din(ep_cfg_iso_i),
+    .dout(sh2pl_ep_cfg_iso_o)
 );
 
 bus_sync #(`USB_FUNC_ADDR_DEV_ADDR_W) func_addr_dev_addr_sync(

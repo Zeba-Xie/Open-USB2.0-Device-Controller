@@ -45,8 +45,8 @@ static FP_CLASS_REQUEST         _class_request;
 //-----------------------------------------------------------------
 int usb_control_send(uint8_t *buf, int size, int requested_size){
     int send;
-	int remain;
-	int count = 0;
+    int remain;
+    int count = 0;
     int err = 0;
 
     OPEN_USB_EPx_CFG_TypeDef ep_cfg;
@@ -60,9 +60,9 @@ int usb_control_send(uint8_t *buf, int size, int requested_size){
 
     // Loop until partial packet sent
     do
-	{
-		remain = size - count;
-		send = MIN(remain, EP0_MAX_PACKET_SIZE);
+    {
+        remain = size - count;
+        send = MIN(remain, EP0_MAX_PACKET_SIZE);
 
         DEBUG_INFO(" Remain %d, Send %d\n", remain, send);
 
@@ -70,34 +70,34 @@ int usb_control_send(uint8_t *buf, int size, int requested_size){
         if (remain == 0 && size == requested_size)
             break;
 
-		openusb_tx_data(ENDPOINT_CONTROL, buf, send);
+        openusb_tx_data(ENDPOINT_CONTROL, buf, send);
 
-		buf += send;
-		count += send;
+        buf += send;
+        count += send;
 
         DEBUG_INFO(" Sent %d, Remain %d\n", send, (size - count));
 
-		while ( !openusb_has_tx_space( ENDPOINT_CONTROL ) )
-		{
+        while ( !openusb_has_tx_space( ENDPOINT_CONTROL ) )
+        {
             // Give up on early OUT (STATUS stage)
             if (openusb_is_rx_ready(ENDPOINT_CONTROL))
             {
                 DEBUG_INFO("USB: Early ACK received...\n");
                 break;
             }
-		}
-	}
+        }
+    }
     while (send >= EP0_MAX_PACKET_SIZE);
 
     if (!err)
     {
         DEBUG_INFO("USB: Sent total %d\n", count);
 
-	    // Wait for ACK from host
-	    do
+        // Wait for ACK from host
+        do
         {
             
-	    } 
+        } 
         while (!openusb_is_rx_ready(ENDPOINT_CONTROL));
 
         openusb_clear_rx_ready_flag(ENDPOINT_CONTROL);
@@ -120,34 +120,34 @@ int usb_control_send(uint8_t *buf, int size, int requested_size){
 //-----------------------------------------------------------------
 static void get_status(DEVICE_REQUEST_TypeDef *request)
 {    
-	uint8_t bRecipient = request->bmRequestType & USB_RECIPIENT_MASK;
+    uint8_t bRecipient = request->bmRequestType & USB_RECIPIENT_MASK;
     uint8_t data[2] = {0, 0};
 
     DEBUG_INFO("USB: Get Status %x\n", bRecipient);
 
-	if ( bRecipient == USB_RECIPIENT_DEVICE )
-	{
+    if ( bRecipient == USB_RECIPIENT_DEVICE )
+    {
         // Self-powered
-		if (!usb_is_bus_powered()) 
+        if (!usb_is_bus_powered()) 
             data[0] |= (1 << 0);
 
         // Remote Wake-up enabled
-		if (_remote_wake_enabled) 
+        if (_remote_wake_enabled) 
             data[0] |= (1 << 1);
 
-		usb_control_send( data, 2, request->wLength );
-	}
-	else if ( bRecipient == USB_RECIPIENT_INTERFACE )
-	{
-		usb_control_send( data, 2, request->wLength );
-	}
-	else if ( bRecipient == USB_RECIPIENT_ENDPOINT )
-	{
-		if (openusb_is_endpoint_stalled( request->wIndex & ENDPOINT_ADDR_MASK)) 
+        usb_control_send( data, 2, request->wLength );
+    }
+    else if ( bRecipient == USB_RECIPIENT_INTERFACE )
+    {
+        usb_control_send( data, 2, request->wLength );
+    }
+    else if ( bRecipient == USB_RECIPIENT_ENDPOINT )
+    {
+        if (openusb_is_endpoint_stalled( request->wIndex & ENDPOINT_ADDR_MASK)) 
             data[0] = 1;
-		usb_control_send( data, 2, request->wLength );
-	}
-	else
+        usb_control_send( data, 2, request->wLength );
+    }
+    else
         openusb_control_endpoint_stall();
 }
 
@@ -156,33 +156,33 @@ static void get_status(DEVICE_REQUEST_TypeDef *request)
 //-----------------------------------------------------------------
 static void clear_feature(DEVICE_REQUEST_TypeDef *request)
 {
-	uint8_t bRecipient = request->bmRequestType & USB_RECIPIENT_MASK;
+    uint8_t bRecipient = request->bmRequestType & USB_RECIPIENT_MASK;
 
     DEBUG_INFO("USB: Clear Feature %x\n", bRecipient);
 
-	if ( bRecipient == USB_RECIPIENT_DEVICE )
-	{
-		if ( request->wValue == USB_FEATURE_REMOTE_WAKEUP )
-		{
+    if ( bRecipient == USB_RECIPIENT_DEVICE )
+    {
+        if ( request->wValue == USB_FEATURE_REMOTE_WAKEUP )
+        {
             DEBUG_INFO("USB: Disable remote wake\n");
             _remote_wake_enabled = 0;
-			openusb_control_endpoint_send_status();
-		}
-		else if ( request->wValue == USB_FEATURE_TEST_MODE )
-		{
+            openusb_control_endpoint_send_status();
+        }
+        else if ( request->wValue == USB_FEATURE_TEST_MODE )
+        {
             DEBUG_INFO("USB: Disable test mode\n");
-			openusb_control_endpoint_send_status();
-		}
-		else
+            openusb_control_endpoint_send_status();
+        }
+        else
             openusb_control_endpoint_stall();
-	}
-	else if ( bRecipient == USB_RECIPIENT_ENDPOINT && 
-			  request->wValue == USB_FEATURE_ENDPOINT_STATE )
-	{
-		openusb_control_endpoint_send_status();
-		openusb_clear_endpoint_stall( request->wIndex & ENDPOINT_ADDR_MASK );
-	}
-	else
+    }
+    else if ( bRecipient == USB_RECIPIENT_ENDPOINT && 
+              request->wValue == USB_FEATURE_ENDPOINT_STATE )
+    {
+        openusb_control_endpoint_send_status();
+        openusb_clear_endpoint_stall( request->wIndex & ENDPOINT_ADDR_MASK );
+    }
+    else
         openusb_control_endpoint_stall();
 }
 
@@ -191,33 +191,33 @@ static void clear_feature(DEVICE_REQUEST_TypeDef *request)
 //-----------------------------------------------------------------
 static void set_feature(DEVICE_REQUEST_TypeDef *request)
 {
-	unsigned char bRecipient = request->bmRequestType & USB_RECIPIENT_MASK;
+    unsigned char bRecipient = request->bmRequestType & USB_RECIPIENT_MASK;
 
     DEBUG_INFO("USB: Set Feature %x\n", bRecipient);
 
-	if ( bRecipient == USB_RECIPIENT_DEVICE )
-	{
-		if ( request->wValue == USB_FEATURE_REMOTE_WAKEUP )
-		{
+    if ( bRecipient == USB_RECIPIENT_DEVICE )
+    {
+        if ( request->wValue == USB_FEATURE_REMOTE_WAKEUP )
+        {
             DEBUG_INFO("USB: Enable remote wake\n");
             _remote_wake_enabled = 1;
-			openusb_control_endpoint_send_status();
-		}
-		else if ( request->wValue == USB_FEATURE_TEST_MODE )
-		{
+            openusb_control_endpoint_send_status();
+        }
+        else if ( request->wValue == USB_FEATURE_TEST_MODE )
+        {
             DEBUG_INFO("USB: Enable test mode\n");
-			openusb_control_endpoint_send_status();
-		}
-		else
+            openusb_control_endpoint_send_status();
+        }
+        else
             openusb_control_endpoint_stall();
-	}
-	else if ( bRecipient == USB_RECIPIENT_ENDPOINT && 
-			  request->wValue == USB_FEATURE_ENDPOINT_STATE )
-	{
-		openusb_control_endpoint_send_status();
-		openusb_set_endpoint_stall(request->wIndex & ENDPOINT_ADDR_MASK);
-	}
-	else
+    }
+    else if ( bRecipient == USB_RECIPIENT_ENDPOINT && 
+              request->wValue == USB_FEATURE_ENDPOINT_STATE )
+    {
+        openusb_control_endpoint_send_status();
+        openusb_set_endpoint_stall(request->wIndex & ENDPOINT_ADDR_MASK);
+    }
+    else
         openusb_control_endpoint_stall();
 }
 
@@ -226,9 +226,9 @@ static void set_feature(DEVICE_REQUEST_TypeDef *request)
 //-----------------------------------------------------------------
 static void set_address(DEVICE_REQUEST_TypeDef *request)
 {
-	unsigned char addr = (LO_BYTE(request->wValue)) & USB_ADDRESS_MASK;
-	
-	openusb_set_address(addr);
+    unsigned char addr = (LO_BYTE(request->wValue)) & USB_ADDRESS_MASK;
+    
+    openusb_set_address(addr);
     openusb_control_endpoint_send_status();
 
     DEBUG_INFO("USB: Set address %x\n", addr);
@@ -239,10 +239,10 @@ static void set_address(DEVICE_REQUEST_TypeDef *request)
 //-----------------------------------------------------------------
 static void get_descriptor(DEVICE_REQUEST_TypeDef *request)
 {
-	unsigned char  bDescriptorType = HI_BYTE(request->wValue);
-	unsigned char  bDescriptorIndex = LO_BYTE( request->wValue );
-	unsigned short wLength = request->wLength;
-	unsigned char  bCount = 0;
+    unsigned char  bDescriptorType = HI_BYTE(request->wValue);
+    unsigned char  bDescriptorIndex = LO_BYTE( request->wValue );
+    unsigned short wLength = request->wLength;
+    unsigned char  bCount = 0;
     unsigned char *desc_ptr;
 
     desc_ptr = usb_get_descriptor(bDescriptorType, bDescriptorIndex, wLength, &bCount);
@@ -266,11 +266,11 @@ static void get_descriptor(DEVICE_REQUEST_TypeDef *request)
 //-----------------------------------------------------------------
 static void get_configuration(DEVICE_REQUEST_TypeDef *request)
 {
-	unsigned char conf = openusb_is_configured() ? 1 : 0;
+    unsigned char conf = openusb_is_configured() ? 1 : 0;
 
     DEBUG_INFO("USB: Get configuration %x\n", conf);
 
-	usb_control_send( &conf, 1, request->wLength );
+    usb_control_send( &conf, 1, request->wLength );
 }
 
 //-----------------------------------------------------------------
@@ -280,18 +280,18 @@ static void set_configuration(DEVICE_REQUEST_TypeDef *request)
 {
     DEBUG_INFO("USB: set_configuration %x\n", request->wValue);
 
-	if ( request->wValue == 0 )
-	{
-		openusb_control_endpoint_send_status();
+    if ( request->wValue == 0 )
+    {
+        openusb_control_endpoint_send_status();
         openusb_set_configured(0);
-	}
+    }
     // Only support one configuration for now
-	else if ( request->wValue == 1 )
-	{
-		openusb_control_endpoint_send_status();
+    else if ( request->wValue == 1 )
+    {
+        openusb_control_endpoint_send_status();
         openusb_set_configured(1);
-	}
-	else
+    }
+    else
         openusb_control_endpoint_stall();
 }
 
@@ -301,7 +301,7 @@ static void set_configuration(DEVICE_REQUEST_TypeDef *request)
 static void get_interface(DEVICE_REQUEST_TypeDef *request)
 {
     DEBUG_INFO("USB: Get interface\n");
-	openusb_control_endpoint_stall();
+    openusb_control_endpoint_stall();
 }
 
 //-----------------------------------------------------------------
@@ -311,9 +311,9 @@ static void set_interface(DEVICE_REQUEST_TypeDef *request)
 {
     DEBUG_INFO("USB: set_interface %x %x\n", request->wValue, request->wIndex);
 
-	if ( request->wValue == 0 && request->wIndex == 0 )
-		openusb_control_endpoint_send_status();
-	else
+    if ( request->wValue == 0 && request->wIndex == 0 )
+        openusb_control_endpoint_send_status();
+    else
         openusb_control_endpoint_stall();
 }
 
@@ -324,7 +324,7 @@ static void set_descriptor(DEVICE_REQUEST_TypeDef *request, unsigned char *data)
 {
     DEBUG_INFO("USB: set_descriptor %x %x %x\n", request->wValue, request->wIndex, request->wLength);
 
-	uint16_t i=0;
+    uint16_t i=0;
 
     DEBUG_INFO("Set data: ");
     for(i=0; i < request->wLength; i++)
@@ -337,8 +337,8 @@ static void set_descriptor(DEVICE_REQUEST_TypeDef *request, unsigned char *data)
 //-----------------------------------------------------------------
 static void usb_process_request(DEVICE_REQUEST_TypeDef *request, unsigned char type, unsigned char req, unsigned char *data)
 {
-	if ( type == USB_STANDARD_REQUEST )
-	{
+    if ( type == USB_STANDARD_REQUEST )
+    {
         // Standard requests
         switch (req)
         {
@@ -374,22 +374,22 @@ static void usb_process_request(DEVICE_REQUEST_TypeDef *request, unsigned char t
             break;
         default:
             DEBUG_INFO("USB: Unknown standard request %x\n", req);
-		    openusb_control_endpoint_stall();
+            openusb_control_endpoint_stall();
             break;
         }
-	}
-	else if ( type == USB_VENDOR_REQUEST )
-	{
+    }
+    else if ( type == USB_VENDOR_REQUEST )
+    {
         DEBUG_INFO("Vendor: Unknown command\n");
 
         // None supported
-		openusb_control_endpoint_stall();
-	}
-	else if ( type == USB_CLASS_REQUEST && _class_request)
-	{
+        openusb_control_endpoint_stall();
+    }
+    else if ( type == USB_CLASS_REQUEST && _class_request)
+    {
         _class_request(req, request->wValue, request->wIndex, data, request->wLength);
-	}
-	else
+    }
+    else
         openusb_control_endpoint_stall();
 }
 
@@ -402,7 +402,7 @@ static void usb_process_setup(void)
     uint8_t setup_pkt[EP0_MAX_PACKET_SIZE];
     uint16_t len;
 
-	len=openusb_get_rx_data(ENDPOINT_CONTROL, setup_pkt, EP0_MAX_PACKET_SIZE);
+    len=openusb_get_rx_data(ENDPOINT_CONTROL, setup_pkt, EP0_MAX_PACKET_SIZE);
     openusb_clear_rx_ready_flag(ENDPOINT_CONTROL);
 
     #if (LOG_SETUP_PACKET)
@@ -431,27 +431,27 @@ static void usb_process_setup(void)
     _ctrl_xfer.request.wLength     <<= 8;
     _ctrl_xfer.request.wLength      |= setup_pkt[6];
 
-	_ctrl_xfer.data_idx      = 0;
+    _ctrl_xfer.data_idx      = 0;
     _ctrl_xfer.data_expected = 0;
 
-	type = _ctrl_xfer.request.bmRequestType & USB_REQUEST_TYPE_MASK;
-	req  = _ctrl_xfer.request.bRequest;
+    type = _ctrl_xfer.request.bmRequestType & USB_REQUEST_TYPE_MASK;
+    req  = _ctrl_xfer.request.bRequest;
 
     // SETUP - GET
-	if (_ctrl_xfer.request.bmRequestType & ENDPOINT_DIR_IN)
-	{
+    if (_ctrl_xfer.request.bmRequestType & ENDPOINT_DIR_IN)
+    {
         DEBUG_INFO("USB: SETUP Get wValue=0x%x wIndex=0x%x wLength=%d\n", 
                     _ctrl_xfer.request.wValue,
                     _ctrl_xfer.request.wIndex,
                     _ctrl_xfer.request.wLength);
 
-		usb_process_request(&_ctrl_xfer.request, type, req, _ctrl_xfer.data_buffer);           
-	}
+        usb_process_request(&_ctrl_xfer.request, type, req, _ctrl_xfer.data_buffer);           
+    }
     // SETUP - SET
-	else
-	{
+    else
+    {
         // No data
-		if ( _ctrl_xfer.request.wLength == 0 )
+        if ( _ctrl_xfer.request.wLength == 0 )
         {
             DEBUG_INFO("USB: SETUP Set wValue=0x%x wIndex=0x%x wLength=%d\n", 
                                         _ctrl_xfer.request.wValue,
@@ -460,26 +460,26 @@ static void usb_process_setup(void)
             usb_process_request(&_ctrl_xfer.request, type, req, _ctrl_xfer.data_buffer);
         }
         // Data expected
-		else
-		{
+        else
+        {
             DEBUG_INFO("USB: SETUP Set wValue=0x%x wIndex=0x%x wLength=%d [OUT expected]\n", 
                                         _ctrl_xfer.request.wValue,
                                         _ctrl_xfer.request.wIndex,
                                         _ctrl_xfer.request.wLength);
             
-			if ( _ctrl_xfer.request.wLength <= MAX_CTRL_DATA_LENGTH )
+            if ( _ctrl_xfer.request.wLength <= MAX_CTRL_DATA_LENGTH )
             {
                 // OUT packets expected to follow containing data
-				_ctrl_xfer.data_expected = 1;
+                _ctrl_xfer.data_expected = 1;
             }
             // Error: Too much data!
-			else
-			{
+            else
+            {
                 DEBUG_INFO("USB: More data than max transfer size\n");
                 openusb_control_endpoint_stall();
-			}
-		}
-	}
+            }
+        }
+    }
 }
 
 //-----------------------------------------------------------------
@@ -487,54 +487,54 @@ static void usb_process_setup(void)
 //-----------------------------------------------------------------
 static void usb_process_out(void)
 {
-	unsigned short received;
+    unsigned short received;
     unsigned char type;
     unsigned char req;
 
     // Error: Not expecting DATA-OUT!
-	if (!_ctrl_xfer.data_expected)
-	{
+    if (!_ctrl_xfer.data_expected)
+    {
         DEBUG_INFO("USB: (EP0) OUT received but not expected, STALL\n");
-		openusb_control_endpoint_stall();
-	}
-	else
-	{
-		received = openusb_get_rx_count( ENDPOINT_CONTROL );
+        openusb_control_endpoint_stall();
+    }
+    else
+    {
+        received = openusb_get_rx_count( ENDPOINT_CONTROL );
 
         DEBUG_INFO("USB: OUT received (%d bytes)\n", received);
 
-		if ( (_ctrl_xfer.data_idx + received) > MAX_CTRL_DATA_LENGTH )
-		{
+        if ( (_ctrl_xfer.data_idx + received) > MAX_CTRL_DATA_LENGTH )
+        {
             DEBUG_INFO("USB: Too much OUT EP0 data %d > %d, STALL\n", (_ctrl_xfer.data_idx + received), MAX_CTRL_DATA_LENGTH);
-			openusb_control_endpoint_stall();
-		}
-		else
-		{
-			openusb_get_rx_data(ENDPOINT_CONTROL, &_ctrl_xfer.data_buffer[_ctrl_xfer.data_idx], received);
+            openusb_control_endpoint_stall();
+        }
+        else
+        {
+            openusb_get_rx_data(ENDPOINT_CONTROL, &_ctrl_xfer.data_buffer[_ctrl_xfer.data_idx], received);
             openusb_clear_rx_ready_flag(ENDPOINT_CONTROL);
-			_ctrl_xfer.data_idx += received;
+            _ctrl_xfer.data_idx += received;
 
             DEBUG_INFO("USB: OUT packet re-assembled %d\n", _ctrl_xfer.data_idx);
 
             // End of transfer (short transfer received?)
-		    if (received < EP0_MAX_PACKET_SIZE || _ctrl_xfer.data_idx >= _ctrl_xfer.request.wLength)
-		    {
+            if (received < EP0_MAX_PACKET_SIZE || _ctrl_xfer.data_idx >= _ctrl_xfer.request.wLength)
+            {
                 // Send ZLP (ACK for Status stage)
                 DEBUG_INFO("USB: Send ZLP status stage %d %d\n", _ctrl_xfer.data_idx, _ctrl_xfer.request.wLength);
 
                 openusb_control_endpoint_send_status();
 
-			    _ctrl_xfer.data_expected = 0;
+                _ctrl_xfer.data_expected = 0;
 
-	            type = _ctrl_xfer.request.bmRequestType & USB_REQUEST_TYPE_MASK;
-	            req  = _ctrl_xfer.request.bRequest;
+                type = _ctrl_xfer.request.bmRequestType & USB_REQUEST_TYPE_MASK;
+                req  = _ctrl_xfer.request.bRequest;
 
-			    usb_process_request(&_ctrl_xfer.request, type, req, _ctrl_xfer.data_buffer);
-		    }
+                usb_process_request(&_ctrl_xfer.request, type, req, _ctrl_xfer.data_buffer);
+            }
             else
                 DEBUG_INFO("DEV: More data expected!\n");
         }
-	}
+    }
 }
 
 //-----------------------------------------------------------------

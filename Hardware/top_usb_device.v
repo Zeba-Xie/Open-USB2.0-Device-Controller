@@ -14,7 +14,7 @@ module top_usb_device(
     ,input              hrstn_i
 
     `ifdef USB_ITF_AHB
-	////// AHB slave interface
+    ////// AHB slave interface
     ,input              hsel_i
     ,input              hwrite_i
     ,input  [1:0]       htrans_i
@@ -29,15 +29,15 @@ module top_usb_device(
     `endif
 
     `ifdef USB_ITF_ICB
-	////// ICB slave interface
-    ,input           	icb_cmd_valid_i
-	,output          	icb_cmd_ready_o
-	,input  [32-1:0] 	icb_cmd_addr_i
-	,input           	icb_cmd_read_i
-	,input  [32-1:0] 	icb_cmd_wdata_i
-	,output          	icb_rsp_valid_o
-	,input           	icb_rsp_ready_i
-	,output [32-1:0] 	icb_rsp_rdata_o
+    ////// ICB slave interface
+    ,input              icb_cmd_valid_i
+    ,output             icb_cmd_ready_o
+    ,input  [32-1:0]    icb_cmd_addr_i
+    ,input              icb_cmd_read_i
+    ,input  [32-1:0]    icb_cmd_wdata_i
+    ,output             icb_rsp_valid_o
+    ,input              icb_rsp_ready_i
+    ,output [32-1:0]    icb_rsp_rdata_o
     `endif
 
     ,input              ulpi_clk60_i
@@ -74,7 +74,7 @@ usbf_device u_usbf_device(
     .hrstn_i                (hrstn_i            ),  
 
     `ifdef USB_ITF_AHB
-	////// AHB slave interface
+    ////// AHB slave interface
     .hsel_i                 (hsel_i             ),
     .hwrite_i               (hwrite_i           ),
     .htrans_i               (htrans_i           ),
@@ -89,7 +89,7 @@ usbf_device u_usbf_device(
     `endif
 
     `ifdef USB_ITF_ICB
-	////// ICB slave interface
+    ////// ICB slave interface
     .icb_cmd_valid_i        (icb_cmd_valid_i    ),
     .icb_cmd_ready_o        (icb_cmd_ready_o    ),
     .icb_cmd_addr_i         (icb_cmd_addr_i     ),
