@@ -6,6 +6,8 @@
 // Version: V1.0
 // Created by Zeba-Xie @github
 // 
+// Modified in 2023.8.4:
+//  Optimize the AHB interface.
 //=================================================================
 
 `include "usbf_cfg_defs.v"
@@ -51,15 +53,14 @@ module usbf_biu(
     ,output [31:0]              wdata_o
     ,input  [31:0]              rdata_i
 
-    `ifdef USB_ITF_ICB
     ,input                      wt_ready_i // MEM fifos are in PHY clock domain
     ,input                      rd_ready_i // so writing/reading data to fifo needs waiting CDC
-    `endif
 
 );
 
 //===================================================================================
 `ifdef USB_ITF_AHB
+
 //-----------------------------------------------------------------
 // write and read enable
 //-----------------------------------------------------------------
@@ -79,13 +80,48 @@ assign rd_en_o = rd_en;
 //-----------------------------------------------------------------
 // hready and hresp
 //-----------------------------------------------------------------
-assign hready_o = 1'b1;
+wire wt_ready_r; // default 1
+wire wt_ready_set = wt_ready_i; // write finished
+wire wt_ready_clr = wt_en; // write start
+wire wt_ready_ena  = wt_ready_set | wt_ready_clr;
+wire wt_ready_next = wt_ready_set | (~wt_ready_clr);
+usbf_gnrl_dfflrd #(1, 1'b1) 
+    wt_ready_difflrd(
+        wt_ready_ena,wt_ready_next,
+        wt_ready_r,
+        hclk_i,hrstn_i
+    );
+
+wire rd_ready_r; // default 1
+wire rd_ready_set = rd_ready_i; // read finished
+wire rd_ready_clr = rd_en; // read start
+wire rd_ready_ena  = rd_ready_set | rd_ready_clr;
+wire rd_ready_next = rd_ready_set | (~rd_ready_clr);
+usbf_gnrl_dfflrd #(1, 1'b1) 
+    rd_ready_difflrd(
+        rd_ready_ena,rd_ready_next,
+        rd_ready_r,
+        hclk_i,hrstn_i
+    );
+
+assign hready_o = wt_ready_r & rd_ready_r;
 assign hresp_o = 2'b0;
 
 //-----------------------------------------------------------------
 // data and addr
 //-----------------------------------------------------------------
-assign addr_o = haddr_i;
+// reg addr
+wire addr_ena = wt_en | rd_en;
+wire [32-1:0] addr_next = haddr_i;
+wire [32-1:0] addr_r;
+usbf_gnrl_dfflrd #(32, 32'b0)
+    addr_dfflrd(
+        addr_ena, addr_next,
+        addr_r,
+        hclk_i,hrstn_i
+    );
+
+assign addr_o = (wt_en | rd_en) ? haddr_i : addr_r;
 assign wdata_o = hwdata_i;
 assign hrdata_o = rdata_i;
 

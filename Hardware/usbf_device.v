@@ -225,13 +225,9 @@ usbf_biu u_usbf_biu(
     .enable_o                           (enable),
     .addr_o                             (addr ),
     .wdata_o                            (wdata),
-    .rdata_i                            (rdata)
-
-    `ifdef USB_ITF_ICB
-    ,
+    .rdata_i                            (rdata),
     .wt_ready_i                         (wt_ready),
     .rd_ready_i                         (rd_ready)
-    `endif
 );
 
 //-----------------------------------------------------------------
@@ -249,10 +245,8 @@ usbf_csr u_usbf_csr(
     .wdata_i                            (wdata),                                 
     .rdata_o                            (rdata),         
 
-    `ifdef USB_ITF_ICB
     .wt_ready_o                         (wt_ready),
-    .rd_ready_o                         (rd_ready),
-    `endif                        
+    .rd_ready_o                         (rd_ready),                     
  
     ////// Device core interface                                                             
     .func_ctrl_hs_chirp_en_o            (csr_func_ctrl_hs_chirp_en ),                                                                          
@@ -295,13 +289,9 @@ usbf_csr u_usbf_csr(
     .func_stat_linestate_i              (csr_utmi_linestate),  
 
     // interrupt req
-    .intr_o                             (intr_o)     
-
-    `ifdef USB_ITF_ICB
-    ,
+    .intr_o                             (intr_o),
     .mem_wt_ready_i                     (mem_wt_ready),
-    .mem_rd_ready_i                     (mem_rd_ready)
-    `endif                                                                
+    .mem_rd_ready_i                     (mem_rd_ready)                                                            
 
 );
 //-----------------------------------------------------------------
@@ -380,13 +370,10 @@ usbf_sync u_usbf_sync(
     .sh2pl_func_ctrl_phy_termselect_o   (utmi_termselect_o),
     .sh2pb_func_ctrl_phy_xcvrselect_o   (utmi_xcvrselect_o),
     .sh2pb_func_ctrl_phy_opmode_o       (utmi_op_mode_o),
-    .p2hb_func_stat_linestate_i         (utmi_linestate_i)
+    .p2hb_func_stat_linestate_i         (utmi_linestate_i),
 
-    `ifdef USB_ITF_ICB
-    ,
     .mem_wt_ready_o                     (mem_wt_ready),
     .mem_rd_ready_o                     (mem_rd_ready)
-    `endif
 );
 
 //-----------------------------------------------------------------

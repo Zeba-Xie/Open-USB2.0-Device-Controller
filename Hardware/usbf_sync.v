@@ -110,10 +110,8 @@ module usbf_sync(
     ,output [1:0]                                   sh2pb_func_ctrl_phy_opmode_o
     ,input  [1:0]                                   p2hb_func_stat_linestate_i
 
-    `ifdef USB_ITF_ICB
     ,output                                         mem_wt_ready_o // MEM fifos are in PHY clock domain
     ,output                                         mem_rd_ready_o // so writing/reading data to fifo needs waiting CDC
-    `endif
 
 );
 
@@ -308,7 +306,6 @@ usbf_gnrl_dfflrd #(`USB_EP0_DATA_DATA_W*`USB_EP_NUM, {`USB_EP0_DATA_DATA_W*`USB_
 assign ep_rx_data_o = actual_rx_data_r;
 
 // mem_wt_ready and mem rd ready pulse generate
-`ifdef USB_ITF_ICB
 
 // sync sh2pt_ep_data_rd_req_o from phy to H clock
 wire [`USB_EP_NUM-1:0] mem_rd_ready;
@@ -332,7 +329,6 @@ set_pulse_sync #(`USB_EP_NUM) sh2pt_ep_data_wt_req_sync(
 assign mem_wt_ready_o = |mem_wt_ready;
 
 
-`endif
 
 //-----------------------------------------------------------------
 // Device interface

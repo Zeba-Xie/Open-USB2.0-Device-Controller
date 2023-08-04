@@ -25,11 +25,10 @@ module usbf_csr(
     ,input [31:0]                                   addr_i
     ,input [31:0]                                   wdata_i
     ,output[31:0]                                   rdata_o
-    `ifdef USB_ITF_ICB
+
     ,output                                         wt_ready_o // MEM fifos are in PHY clock domain
     ,output                                         rd_ready_o // so writing/reading data to fifo needs waiting CDC
-    `endif
-
+ 
     ////// Device core interface
     ,output                                         func_ctrl_hs_chirp_en_o
     ,output [ `USB_FUNC_ADDR_DEV_ADDR_W-1:0]        func_addr_dev_addr_o
@@ -73,10 +72,8 @@ module usbf_csr(
     ////// Others
     ,output                                         intr_o
 
-    `ifdef USB_ITF_ICB
     ,input                                          mem_wt_ready_i // MEM fifos are in PHY clock domain
     ,input                                          mem_rd_ready_i // so writing/reading data to fifo needs waiting CDC
-    `endif
 );
 //==========================================================================================
 // Register Write {
@@ -663,25 +660,25 @@ generate //{
     //-----------------------------------------------------------------
     // Register usb_ep_data
     //-----------------------------------------------------------------
-    `ifdef USB_ITF_ICB
+    // `ifdef USB_ITF_ICB
     for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
         assign ep_data_r[i][7:0] = ep_rx_data_i[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W];
         assign ep_data_r[i][31:8] = 24'b0;
     end //}
 
-    `else // ~USB_ITF_ICB
-    for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
-        assign ep_data_ena[i] = ep_data_rd_en[i];
-        assign ep_data_next[i][7:0] = ep_rx_data_i[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W];
-        assign ep_data_next[i][31:8] = 24'b0;
-        usbf_gnrl_dfflrd #(32, 32'b0) 
-            ep_data_difflrd(
-                ep_data_ena[i],ep_data_next[i],
-                ep_data_r[i],
-                hclk_i,rstn_i
-            );        
-    end //}
-    `endif // USB_ITF_ICB
+    // `else // ~USB_ITF_ICB
+    // for(i=0; i<`USB_EP_NUM; i=i+1) begin //{
+    //     assign ep_data_ena[i] = ep_data_rd_en[i];
+    //     assign ep_data_next[i][7:0] = ep_rx_data_i[i*`USB_EP0_DATA_DATA_W +: `USB_EP0_DATA_DATA_W];
+    //     assign ep_data_next[i][31:8] = 24'b0;
+    //     usbf_gnrl_dfflrd #(32, 32'b0) 
+    //         ep_data_difflrd(
+    //             ep_data_ena[i],ep_data_next[i],
+    //             ep_data_r[i],
+    //             hclk_i,rstn_i
+    //         );        
+    // end //}
+    // `endif // USB_ITF_ICB
 
 endgenerate //}
 
@@ -731,7 +728,6 @@ endgenerate //}
 // Just MEM read and write need waiting CDC.
 // It's a pulse signal.
 //-----------------------------------------------------------------
-`ifdef USB_ITF_ICB
 reg mem_wt_access;
 reg mem_rd_access;
 reg mem_access   ;
@@ -752,7 +748,6 @@ endgenerate //}
 assign wt_ready_o = mem_access ?    mem_wt_ready_i : wt_en_i;
 assign rd_ready_o = mem_access ?    mem_rd_ready_i : rd_en_i;
 
-`endif
 
 //==========================================================================================
 // Interrupt {

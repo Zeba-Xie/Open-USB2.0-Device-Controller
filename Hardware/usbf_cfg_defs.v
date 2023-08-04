@@ -19,8 +19,9 @@
 // define  : AHB slave interface
 // undefine: Others
 // warning : USB_ITF_AHB or USB_ITF_ICB must define one.
+// Do not surpport burst transfer and back-to-back
 //-----------------------------------------------------------------
-// `define USB_ITF_AHB
+`define USB_ITF_AHB
 
 //-----------------------------------------------------------------
 // USB_ITF_ICB
@@ -28,7 +29,7 @@
 // undefine: Others
 // warning : USB_ITF_AHB or USB_ITF_ICB must define one.
 //-----------------------------------------------------------------
-`define USB_ITF_ICB
+// `define USB_ITF_ICB
 
 `ifdef USB_ITF_ICB
     // must define USB BASE ADDR
