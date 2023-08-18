@@ -26,8 +26,8 @@ module usbf_csr(
     ,input [31:0]                                   wdata_i
     ,output[31:0]                                   rdata_o
 
-    ,output                                         wt_ready_o // MEM fifos are in PHY clock domain
-    ,output                                         rd_ready_o // so writing/reading data to fifo needs waiting CDC
+    ,output                                         wt_ready_o
+    ,output                                         rd_ready_o 
  
     ////// Device core interface
     ,output                                         func_ctrl_hs_chirp_en_o
@@ -72,8 +72,8 @@ module usbf_csr(
     ////// Others
     ,output                                         intr_o
 
-    ,input                                          mem_wt_ready_i // MEM fifos are in PHY clock domain
-    ,input                                          mem_rd_ready_i // so writing/reading data to fifo needs waiting CDC
+    ,input                                          mem_wt_ready_i 
+    ,input                                          mem_rd_ready_i 
 );
 //==========================================================================================
 // Register Write {
@@ -745,9 +745,10 @@ generate //{
 endgenerate //}
 
 
-assign wt_ready_o = mem_access ?    mem_wt_ready_i : wt_en_i;
-assign rd_ready_o = mem_access ?    mem_rd_ready_i : rd_en_i;
-
+// assign wt_ready_o = mem_access ?    mem_wt_ready_i : wt_en_i;
+// assign rd_ready_o = mem_access ?    mem_rd_ready_i : rd_en_i;
+assign wt_ready_o = 1'b0 ?    mem_wt_ready_i : wt_en_i;
+assign rd_ready_o = 1'b0 ?    mem_rd_ready_i : rd_en_i;
 
 //==========================================================================================
 // Interrupt {

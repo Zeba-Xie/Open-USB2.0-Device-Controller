@@ -13,14 +13,17 @@
 // |      |--TX SIE<--|     |--rd<--|  TX-FIFO  |
 // |------|           |-----|       |-----------|
 //    ^                  ^                ^
-//    |------------------|----------------|
+//    |------------------|                |
+//              ^                         |
+//          | SYNC |                      |
+//              v                         v
+//    |--------------------------------------|
+//    |                 CSR                  |
+//    |--------------------------------------|
 //                       v
-//                    |SYNC |
-//                       v
-//                    | CSR |
 //                    |-----|
-//                       v
 //                    | BIU |
+//                    |-----|
 // 
 //=================================================================
 
@@ -148,12 +151,7 @@ wire    [`USB_EP_NUM-1:0]                       csr_ep_tx_ctrl_tx_flush;
 wire    [`USB_EP_NUM-1:0]                       csr_ep_data_rd_req;
 wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  csr_ep_tx_data;
 
-wire    [`USB_EP_NUM-1:0]                       ep_rx_ctrl_rx_flush;
-wire    [`USB_EP_NUM-1:0]                       ep_data_wt_req;
-wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  ep_rx_data;
 wire    [`USB_EP_NUM-1:0]                       ep_tx_ctrl_tx_flush;
-wire    [`USB_EP_NUM-1:0]                       ep_data_rd_req;
-wire    [`USB_EP0_DATA_DATA_W*`USB_EP_NUM-1:0]  ep_tx_data;
 
 ////// CSR<-->SYNC
 wire                                            csr_utmi_dmpulldown;
@@ -323,13 +321,8 @@ usbf_sync u_usbf_sync(
     .ep_sts_rx_ready_o                  (csr_ep_sts_rx_ready),     
     .ep_sts_rx_count_o                  (csr_ep_sts_rx_count),     
 
-    .ep_rx_ctrl_rx_flush_i              (csr_ep_rx_ctrl_rx_flush),
-    .ep_data_rd_req_i                   (csr_ep_data_rd_req),     
-    .ep_rx_data_o                       (csr_ep_rx_data),         
     .ep_tx_ctrl_tx_flush_i              (csr_ep_tx_ctrl_tx_flush), 
-    .ep_data_wt_req_i                   (csr_ep_data_wt_req),      
-    .ep_tx_data_i                       (csr_ep_tx_data),          
-
+      
     .func_ctrl_phy_dmpulldown_i         (csr_utmi_dmpulldown),
     .func_ctrl_phy_dppulldown_i         (csr_utmi_dppulldown),
     .func_ctrl_phy_termselect_i         (csr_utmi_termselect),
@@ -358,13 +351,8 @@ usbf_sync u_usbf_sync(
     .p2hl_ep_sts_rx_ready_i             (ep_sts_rx_ready),
     .p2hb_ep_sts_rx_count_i             (ep_sts_rx_count),
     
-    .sh2pt_ep_rx_ctrl_rx_flush_o        (ep_rx_ctrl_rx_flush),
-    .sh2pt_ep_data_rd_req_o             (ep_data_rd_req),
-    .p2hb_ep_rx_data_i                  (ep_rx_data),
     .sh2pt_ep_tx_ctrl_tx_flush_o        (ep_tx_ctrl_tx_flush),
-    .sh2pt_ep_data_wt_req_o             (ep_data_wt_req),
-    .sh2pb_ep_tx_data_o                 (ep_tx_data),
-    
+
     .sh2pl_func_ctrl_phy_dmpulldown_o   (utmi_dmpulldown_o),
     .sh2pl_func_ctrl_phy_dppulldown_o   (utmi_dppulldown_o),
     .sh2pl_func_ctrl_phy_termselect_o   (utmi_termselect_o),
@@ -430,18 +418,19 @@ usbf_epu u_usbf_epu(
 // MEM
 //-----------------------------------------------------------------
 usbf_mem u_usbf_mem(
-    .phy_clk_i                          (phy_clk_i),               
+    .phy_clk_i                          (phy_clk_i), 
+    .hclk_i                             (hclk_i),              
     .rstn_i                             (hrstn_i),                                   
 
     ////// CSR interface
     //// RX-FIFO Read
-    .csr_ep_rx_ctrl_rx_flush_i          (ep_rx_ctrl_rx_flush),                                                
-    .csr_ep_data_rd_req_i               (ep_data_rd_req),                                           
-    .csr_ep_rx_data_o                   (ep_rx_data),                                       
+    .csr_ep_rx_ctrl_rx_flush_i          (csr_ep_rx_ctrl_rx_flush),                                                
+    .csr_ep_data_rd_req_i               (csr_ep_data_rd_req),                                           
+    .csr_ep_rx_data_o                   (csr_ep_rx_data),                                       
     //// TX-FIFO Write
-    .csr_ep_tx_ctrl_tx_flush_i          (ep_tx_ctrl_tx_flush),                                       
-    .csr_ep_data_wt_req_i               (ep_data_wt_req),                                   
-    .csr_ep_tx_data_i                   (ep_tx_data),                               
+    .csr_ep_tx_ctrl_tx_flush_i          (csr_ep_tx_ctrl_tx_flush),                                       
+    .csr_ep_data_wt_req_i               (csr_ep_data_wt_req),                                   
+    .csr_ep_tx_data_i                   (csr_ep_tx_data),   
 
     ////// EPU interface 
     //// RX-FIFO Write 

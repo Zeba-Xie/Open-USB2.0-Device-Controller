@@ -81,7 +81,7 @@ localparam COUNT_W = ADDR_W + 1;
         end
 
         // Pop
-        if (pop_i & ~empty_o)
+        if (pop_i & ~empty_o) 
         begin
             rd_ptr      <= rd_ptr + 1;
         end
